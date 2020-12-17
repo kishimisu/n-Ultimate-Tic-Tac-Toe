@@ -56,7 +56,7 @@ function Morpion(layer, index = 0, parent) {
             } else { // no player
                 const index = this.parent ? this.parent.index : 0
 
-                if(!this.atomic && (this.index%2===0 && index%2===0 || this.index%2===1 && index%2===1)) {
+                if(!this.atomic && gray_checker && (this.index%2===0 && index%2===0 || this.index%2===1 && index%2===1)) {
                     fill(0, 0, 0, 40) // grey case
                 } else {
                     noFill() // white case
@@ -81,14 +81,16 @@ function Morpion(layer, index = 0, parent) {
             if(this.value === 0 && show_numbers) { // Draw number (if enabled)
                 fill(0)
                 text(this.index, width/2,height/2)
-            } else if(this.value === 1) { // Draw cross
-                line(width*0.05, height*0.05, width*0.95, height*0.95)
-                line(width*0.95, height*0.05, width*0.05, height*0.95)
-            } else if(this.value === 2) { // Draw circle
-                noFill()
-                ellipse(width/2, height/2, width*0.9)
-            } else if(this.value === 3) {
-                triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
+            } else if(draw_shapes) {
+                if(this.value === 1) { // Draw cross
+                    line(width*0.05, height*0.05, width*0.95, height*0.95)
+                    line(width*0.95, height*0.05, width*0.05, height*0.95)
+                } else if(this.value === 2) { // Draw circle
+                    noFill()
+                    ellipse(width/2, height/2, width*0.9)
+                } else if(this.value === 3) {
+                    triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
+                }
             }
         }
 

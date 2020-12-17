@@ -1,15 +1,19 @@
 // Setting
 let debug_logs = false
-let show_numbers = false
-let autoplay = true
-let speed = 1000
-let free_camera = false
+
 let play_on_click = false
+let autoplay = true
+let speed = 1
+let free_camera = false
 let player_count = 2
+
+let show_numbers = false
+let draw_shapes = false
+let gray_checker = false
 
 // Game variables
 let atomics = []
-let game = new Morpion(5)
+let game = new Morpion(3)
 let player = 1
 let last_zone = null
 
