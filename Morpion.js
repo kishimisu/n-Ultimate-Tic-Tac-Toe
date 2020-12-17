@@ -98,6 +98,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Clicks on an atomic case, return 1 if the move if valid, 0 otherwise
     this.click = function() {
         if(this.value === 0) {
             const path = this.getPath()
@@ -119,6 +120,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Recursively detect which atomic case is clicked. Return 1 if the case is valid, 0 otherwise
     this.isClicked = function(x_start, y_start, offset) {
         if(this.value !== 0) {
             return 0
@@ -146,6 +148,7 @@ function Morpion(layer, index = 0, parent) {
         return 0
     }
 
+    // Recursively checks for win conditions and updates parents objects
     this.update = function() {
         const win_checks = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ]
         
@@ -174,6 +177,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Check if three cases are in win condition
     this.checkWin = function(check) {
         const [a, b, c] = check
 
@@ -186,6 +190,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Remove a case from atomic collection recursively (used when automatic mode is playing)
     this.removeFromAtomicsCollection = function() {
         if(this.atomic) {
             const index_in_collection = atomics.indexOf(this)
@@ -201,6 +206,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Return an array of indexes representing playables cases from a path (last_zone)
     this.getPlayables = function(path) {
         if(layer === 1) {
             const playables = []
@@ -223,6 +229,7 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Returns the number of playable cases
     this.getEmptyCases = function() {
         let count = 0
 
@@ -235,12 +242,14 @@ function Morpion(layer, index = 0, parent) {
         return count
     }
 
+    // prints the path along with the debug message if debug mode is enabled
     this.debugPath = function(action) {
         if(debug_logs) {
             print(this.getPath() + ': ' + action)
         }
     }
 
+    // Gets path from each parent until the master layer as a string
     this.getPath = function() {
         return this.parent ? (this.parent.master ? this.index : (parent.getPath() + ' -> ' + this.index)) : 'master'
     }
