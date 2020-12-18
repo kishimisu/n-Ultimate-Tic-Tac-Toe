@@ -4,11 +4,12 @@ let debug_logs = false
 let play_on_click = false
 let autoplay = true
 let speed = 1
+let reload_draws = true
 let free_camera = false
 let player_count = 2
 
 let show_numbers = false
-let draw_shapes = true
+let draw_shapes = 'hybrid' // 'false' : 'true' : 'hybrid'
 let gray_checker = true
 
 // Game variables
@@ -119,7 +120,7 @@ function switchPlayers() {
 }
 
 function gameOver(winner) {
-    if(!winner) {
+    if(!winner && reload_draws) {
         let removed_draw = false
 
         game.grid.forEach( child => {
@@ -195,7 +196,7 @@ function checkNextZoneAvailability() {
     let morpion = game.getChild(path)
 
     while(morpion.getEmptyCases() === 0 && last_zone.length > 0) {
-        if(morpion.parent && morpion.parent.master && morpion.value === -1) {
+        if(reload_draws && morpion.parent && morpion.parent.master && morpion.value === -1) {
             const contain_draws = morpion.getValues().includes(-1)
             
             morpion.removeDraws(!contain_draws)

@@ -44,7 +44,7 @@ function Morpion(layer, index = 0, parent) {
         /// DRAWING PART ///
         if(!this.master) { // If not in master layer
             // Calculate background alpha value
-            const alpha = (this.parent.win_cases.length > 0 && this.parent.win_cases.includes(this.index) ? 140 : 70) + this.layer * 20
+            const alpha = (this.parent.win_cases.length > 0 && this.parent.win_cases.includes(this.index) ? 150 : 70) + this.layer * 20
             
             // Calculate background color
             if(this.value === 1) {
@@ -58,7 +58,6 @@ function Morpion(layer, index = 0, parent) {
                     fill(0, 0, 0, 140)
                 :
                     fill(255, 255, 255, 160)
-                //fill(0, 0, 0, (this.parent.master === false) ? 140 : 180 )
             } else { // no player
                 const index = this.parent ? this.parent.index : 0
 
@@ -76,8 +75,9 @@ function Morpion(layer, index = 0, parent) {
             if(this.value === 0 && show_numbers) { // Draw number (if enabled)
                 fill(0)
                 text(this.index, width/2,height/2)
-            } else if(draw_shapes) {
-                // if(!(this.atomic && parent.value === 0)) {
+            } else if(draw_shapes !== 'false') {
+                if(draw_shapes === 'true' || 
+                   draw_shapes === 'hybrid' && !(this.atomic && parent.value === 0)) {
                     if(this.value === 1) { // Draw cross
                         line(width*0.05, height*0.05, width*0.95, height*0.95)
                         line(width*0.95, height*0.05, width*0.05, height*0.95)
@@ -88,7 +88,7 @@ function Morpion(layer, index = 0, parent) {
                         noFill()
                         triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
                     }
-                // }
+                }
             }
         }
 
