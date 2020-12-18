@@ -1,9 +1,9 @@
 // Setting
-let debug_logs = true
+let debug_logs = false
 
 let play_on_click = false
 let autoplay = true
-let speed = 100
+let speed = 1
 let free_camera = false
 let player_count = 2
 
@@ -13,7 +13,7 @@ let gray_checker = false
 
 // Game variables
 let atomics = []
-let game = new Morpion(4)
+let game = new Morpion(3)
 let player = 1
 let last_zone = null
 
@@ -166,4 +166,30 @@ function calculateBruteForce(time, playables) {
         return calculateBruteForce(time + 1)
     }
 
+}
+
+function pathStringToArray(str) {
+    let path = str.split('->').map( elm => {
+        return Number(elm.trim())
+    })
+
+    return path
+}
+
+function checkNextZoneAvailability() {
+    let path = pathStringToArray(last_zone)
+    let morpion = game.getChild(path)
+
+    while(morpion.getEmptyCases() === 0 && last_zone.length > 0) {
+        // console.log("Checking availability for ", last_zone, morpion.getPath())
+        last_zone = last_zone.slice(0, -5)
+        path = pathStringToArray(last_zone)
+        morpion = game.getChild(path)
+    }
+
+    //console.log(last_zone, morpion.getPath(), ": valid")
+
+    if(last_zone.length === 0) {
+        last_zone = null
+    }
 }

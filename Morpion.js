@@ -71,17 +71,6 @@ function Morpion(layer, index = 0, parent) {
     
             strokeWeight(12)
             rect(0,0,width-1,height-1) // fill with background color
-
-            // Playable zone
-            if(layer === 1 && last_zone && this.getPath() === last_zone) {
-                if(this.value !== 0) {
-                    last_zone = null
-                } else {
-                    fill(100,255,100,100)
-                    rect(0,0,width-1,height-1) // fill with background color
-                }
-            }
-
             strokeWeight(25)
 
             if(this.value === 0 && show_numbers) { // Draw number (if enabled)
@@ -100,7 +89,8 @@ function Morpion(layer, index = 0, parent) {
             }
         }
 
-        if(this.master && last_zone === null) {
+        if(last_zone && this.getPath().startsWith(last_zone)) {
+            strokeWeight(1)
             fill(100,255,100,100)
             rect(0,0,width-1,height-1) // fill with background color
         }
@@ -112,7 +102,7 @@ function Morpion(layer, index = 0, parent) {
             const path = this.getPath()
 
             if(last_zone !== null) {
-                if(path.slice(0, -5) !== last_zone) {
+                if(!path.slice(0, -5).startsWith(last_zone)) {
                     return 0
                 }
             }
@@ -122,6 +112,7 @@ function Morpion(layer, index = 0, parent) {
             this.debugPath("clicked")
 
             this.parent.update()
+            checkNextZoneAvailability()
             return 1
         } else {
             return 0
@@ -247,6 +238,10 @@ function Morpion(layer, index = 0, parent) {
     this.getEmptyCases = function() {
         let count = 0
 
+        if(this.value !== 0) {
+            return 0
+        }
+
         for(let element of this.grid) {
             if(element.value === 0) {
                 count++
@@ -273,7 +268,7 @@ function Morpion(layer, index = 0, parent) {
 
     // Gets path from each parent until the master layer as a string
     this.getPath = function() {
-        return this.parent ? (this.parent.master ? this.index : (parent.getPath() + ' -> ' + this.index)) : 'master'
+        return this.parent ? (this.parent.master ? this.index.toString() : (parent.getPath() + ' -> ' + this.index)) : 'master'
     }
 
     // this.getPathArray = function() {
