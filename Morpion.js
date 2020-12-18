@@ -168,7 +168,7 @@ function Morpion(layer, index = 0, parent) {
                 this.win_cases = win_check
                 this.debugPath("updated: " + this.value)
 
-                if(autoplay) {
+                if(autoplay && !simulating) {
                     this.removeFromAtomicsCollection()
                 }
 
@@ -243,6 +243,29 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
+    // Return an array of atomics representing playables cases from a path (last_zone)
+    this.getPlayablesBruteForce = function(path) {
+        if(layer === 1) {
+            const playables = []
+
+            for(let atomic of this.grid) {
+                if(atomic.value === 0) {
+                    playables.push(atomic)
+                }
+            }
+
+            return playables
+        } else {
+            const index = Number(path[0])
+
+            if(this.grid[index].value !== 0 || this.getEmptyCases() === 0) {
+                return null
+            } else {
+                return this.grid[index].getPlayablesBruteForce(path.slice(5))
+            }
+        }
+    }
+
     // Returns the number of playable cases
     this.getEmptyCases = function() {
         let count = 0
@@ -260,7 +283,7 @@ function Morpion(layer, index = 0, parent) {
         if(path.length === 0) {
             return this
         } else {
-            return this.grid[path[0]].getChild(path.slice(1))
+            return this.grid[path[0]].getChild(path.slice(5))
         }
     }
 
@@ -274,6 +297,52 @@ function Morpion(layer, index = 0, parent) {
     // Gets path from each parent until the master layer as a string
     this.getPath = function() {
         return this.parent ? (this.parent.master ? this.index : (parent.getPath() + ' -> ' + this.index)) : 'master'
+    }
+
+    this.getAtomics = function() {
+        if (this.layer === 1) {
+            let arr = []
+
+            for (let atomic of this.grid) {
+                if (atomic.value === 0) {
+                    arr.push(atomic)
+                }
+            }
+
+            return arr
+        } else {
+            let arr = []
+
+            for (let morpion of this.grid) {
+                arr = [...arr, ...morpion.getAtomics()]
+            }
+            return arr
+        }
+    }
+
+    this.getPoints = function() {
+        if (this.layer === 1) {
+            let nb = 0
+
+            for (let atomic of this.grid) {
+                if (atomic.value === player) {
+                    nb++
+                }
+            }
+            if (this.value === player) {
+                nb++
+            }
+            return nb
+        } else {
+            let nb = 0
+            for (let morpion of this.grid) {
+                nb += morpion.getPoints()
+            }
+            if (!this.master && this.value === player) {
+                nb += this.layer
+            }
+            return nb
+        }
     }
 
     // this.getPathArray = function() {
