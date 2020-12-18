@@ -1,19 +1,19 @@
 // Setting
-let debug_logs = false
+let debug_logs = true
 
 let play_on_click = false
 let autoplay = true
-let speed = 1
+let speed = 100
 let free_camera = false
 let player_count = 2
 
 let show_numbers = false
-let draw_shapes = false
+let draw_shapes = true
 let gray_checker = false
 
 // Game variables
 let atomics = []
-let game = new Morpion(3)
+let game = new Morpion(4)
 let player = 1
 let last_zone = null
 
@@ -118,10 +118,12 @@ function switchPlayers() {
     }
 }
 
-function gameOver() {
+function gameOver(winner) {
     speed = 0
     free_camera = true
     last_zone = ''
+
+    if (winner) document.location = document.location
 }
 
 function debug(str) {
@@ -139,4 +141,29 @@ function getRandomPlayableIndex() {
     }
 
     return playables[floor(random(playables.length))]
+}
+
+function bruteForce() {
+    const playables = last_zone === null ? _.cloneDeep(atomics) : _.cloneDeep(game.getPlayables(last_zone))
+
+    // If the whole field is playable. Note that a change to playbles will affect atomics.
+    if (playables === null) playables = _.cloneDeep(atomics)
+
+    let time = 0
+    let clone_game = _.cloneDeep(game)
+
+    let paths = calculateBruteForce(time, playables)
+
+    console.log(playables)
+}
+
+function calculateBruteForce(time, playables) {
+
+    if (time <= 1) {
+
+        
+
+        return calculateBruteForce(time + 1)
+    }
+
 }

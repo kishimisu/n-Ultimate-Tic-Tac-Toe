@@ -53,6 +53,12 @@ function Morpion(layer, index = 0, parent) {
                 fill(0, 0, 255, alpha) // player "blue"
             } else if(this.value === 3) {
                 fill(255, 255, 0, alpha)
+            } else if (this.value === -1) { // Draw game.
+                this.parent.master === false ?
+                    fill(0, 0, 0, 140)
+                :
+                    fill(255, 255, 255, 160)
+                //fill(0, 0, 0, (this.parent.master === false) ? 140 : 180 )
             } else { // no player
                 const index = this.parent ? this.parent.index : 0
 
@@ -160,22 +166,28 @@ function Morpion(layer, index = 0, parent) {
             if(winner !== 0) {
                 this.value = winner
                 this.win_cases = win_check
-                this.debugPath("updated")
+                this.debugPath("updated: " + this.value)
 
                 if(autoplay) {
                     this.removeFromAtomicsCollection()
                 }
 
                 if(this.master) {
-                    gameOver()
+                    gameOver(winner)
                 } else {
                     this.parent.update()
                 }
+
+                return
             }
         }
 
-        if(this.getEmptyCases() === 0) {
+        if(this.getEmptyCases() === 0 && !this.master) {
             this.value = -1
+
+            this.debugPath("updated: " + this.value)
+            
+            this.parent.update()
         }
     }
 
