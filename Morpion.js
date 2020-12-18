@@ -256,6 +256,14 @@ function Morpion(layer, index = 0, parent) {
         return count
     }
 
+    this.getChild = function(path) {
+        if(path.length === 0) {
+            return this
+        } else {
+            return this.grid[path[0]].getChild(path.slice(1))
+        }
+    }
+
     // prints the path along with the debug message if debug mode is enabled
     this.debugPath = function(action) {
         if(debug_logs) {
