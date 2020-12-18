@@ -9,11 +9,11 @@ let player_count = 2
 
 let show_numbers = false
 let draw_shapes = true
-let gray_checker = false
+let gray_checker = true
 
 // Game variables
 let atomics = []
-let game = new Morpion(4)
+let game = new Morpion(2)
 let player = 1
 let last_zone = null
 
@@ -119,6 +119,21 @@ function switchPlayers() {
 }
 
 function gameOver(winner) {
+    if(!winner) {
+        let removed_draw = false
+
+        game.grid.forEach( child => {
+            if(child.value === -1) {
+                removed_draw = true
+                child.removeDraws(!child.getValues().includes(-1))
+            }
+        })
+
+        if(removed_draw) {
+            return
+        }
+    }
+
     speed = 0
     free_camera = true
     last_zone = ''
@@ -180,13 +195,18 @@ function checkNextZoneAvailability() {
     let morpion = game.getChild(path)
 
     while(morpion.getEmptyCases() === 0 && last_zone.length > 0) {
-        // console.log("Checking availability for ", last_zone, morpion.getPath())
+        if(morpion.parent && morpion.parent.master && morpion.value === -1) {
+            const contain_draws = morpion.getValues().includes(-1)
+            
+            morpion.removeDraws(!contain_draws)
+            checkNextZoneAvailability()
+            return
+        }
+
         last_zone = last_zone.slice(0, -5)
         path = pathStringToArray(last_zone)
         morpion = game.getChild(path)
     }
-
-    //console.log(last_zone, morpion.getPath(), ": valid")
 
     if(last_zone.length === 0) {
         last_zone = null

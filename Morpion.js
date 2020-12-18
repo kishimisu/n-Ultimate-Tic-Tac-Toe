@@ -84,7 +84,8 @@ function Morpion(layer, index = 0, parent) {
                     } else if(this.value === 2) { // Draw circle
                         noFill()
                         ellipse(width/2, height/2, width*0.9)
-                    } else if(this.value === 3) {
+                    } else if(this.value === 3) { // Draw triangle
+                        noFill()
                         triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
                     }
                 // }
@@ -177,14 +178,10 @@ function Morpion(layer, index = 0, parent) {
         }
 
         if(this.getEmptyCases() === 0 && !this.master) {
-            this.debugPath("updated: " + this.value)
             this.value = -1
+            this.debugPath("updated: " + this.value)
             this.setDraw()
             this.parent.update()
-        }
-
-        if(this.parent && this.parent.master && this.value === -1) {
-            this.removeDraws()
         }
     }
 
@@ -263,6 +260,7 @@ function Morpion(layer, index = 0, parent) {
 
     this.setDraw = function(first) {
         if(this.value === 0 && !first) {
+            this.debugPath("set draw (-1)")
             this.value = -2
         }
 
@@ -273,8 +271,9 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
-    this.removeDraws = function() {
-        if(this.value === -1) {
+    this.removeDraws = function(force = false) {
+        if(this.value === -1 || this.atomic || force) {
+            this.debugPath("reset (0)")
             this.value = 0
 
             if(this.atomic) {
@@ -284,11 +283,23 @@ function Morpion(layer, index = 0, parent) {
 
         if(!this.atomic) {
             for(let child of this.grid) {
-                if(child.value === -1) {
-                    child.removeDraws()
+                if(child.value === -1 || child.atomic || force) {
+                    child.removeDraws(force)
                 }
             }
         }
+    }
+
+    this.getValues = function() {
+        let values = []
+
+        if(!this.atomic) {
+            this.grid.forEach( elm => {
+                values.push(elm.value)
+            })
+        }
+
+        return values
     }
 
     // prints the path along with the debug message if debug mode is enabled
