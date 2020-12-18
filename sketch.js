@@ -13,7 +13,7 @@ let gray_checker = false
 
 // Game variables
 let atomics = []
-let game = new Morpion(3)
+let game = new Morpion(4)
 let player = 1
 let last_zone = null
 
@@ -122,8 +122,6 @@ function gameOver(winner) {
     speed = 0
     free_camera = true
     last_zone = ''
-
-    if (winner) document.location = document.location
 }
 
 function debug(str) {
@@ -133,7 +131,8 @@ function debug(str) {
 }
 
 function getRandomPlayableIndex() {
-    const playables = game.getPlayables(last_zone)
+    const playables = game.getChild(pathStringToArray(last_zone)).getPlayables()
+    // console.log(playables)
 
     if(playables === null) {
         last_zone = null

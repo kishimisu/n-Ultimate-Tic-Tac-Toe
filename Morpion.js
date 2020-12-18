@@ -166,6 +166,7 @@ function Morpion(layer, index = 0, parent) {
                 if(this.master) {
                     gameOver(winner)
                 } else {
+                    this.setDraw()
                     this.parent.update()
                 }
 
@@ -174,10 +175,9 @@ function Morpion(layer, index = 0, parent) {
         }
 
         if(this.getEmptyCases() === 0 && !this.master) {
-            this.value = -1
-
             this.debugPath("updated: " + this.value)
-            
+            this.value = -1
+            this.setDraw()
             this.parent.update()
         }
     }
@@ -212,25 +212,21 @@ function Morpion(layer, index = 0, parent) {
     }
 
     // Return an array of indexes representing playables cases from a path (last_zone)
-    this.getPlayables = function(path) {
-        if(layer === 1) {
-            const playables = []
+    this.getPlayables = function() {
+        if(this.atomic) {
+            if(this.value === 0) {
+                return [atomics.indexOf(this)]
+            }
+        } else {
+            let valid_childs = []
 
-            for(let atomic of this.grid) {
-                if(atomic.value === 0) {
-                    playables.push(atomics.indexOf(atomic))
+            for(let child of this.grid) {
+                if(child.value === 0) {
+                    valid_childs = valid_childs.concat(child.getPlayables())
                 }
             }
 
-            return playables
-        } else {
-            const index = Number(path[0])
-
-            if(this.grid[index].value !== 0 || this.getEmptyCases() === 0) {
-                return null
-            } else {
-                return this.grid[index].getPlayables(path.slice(5))
-            }
+            return valid_childs
         }
     }
 
@@ -256,6 +252,18 @@ function Morpion(layer, index = 0, parent) {
             return this
         } else {
             return this.grid[path[0]].getChild(path.slice(1))
+        }
+    }
+
+    this.setDraw = function(first) {
+        if(this.value === 0 && !first) {
+            this.value = -2
+        }
+
+        if(!this.atomic) {
+            for(let child of this.grid) {
+                child.setDraw()
+            }
         }
     }
 
