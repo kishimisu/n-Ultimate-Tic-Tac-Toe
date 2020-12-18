@@ -240,7 +240,7 @@ function Morpion(layer, index = 0, parent) {
     this.getEmptyCases = function() {
         let count = 0
 
-        if(this.value !== 0) {
+        if(this.value !== 0 || this.atomic) {
             return 0
         }
 
