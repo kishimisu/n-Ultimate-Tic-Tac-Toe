@@ -44,7 +44,7 @@ function Morpion(layer, index = 0, parent) {
         /// DRAWING PART ///
         if(!this.master) { // If not in master layer
             // Calculate background alpha value
-            const alpha = this.parent.win_cases.length > 0 && this.parent.win_cases.includes(this.index) ? 140 : 40
+            const alpha = (this.parent.win_cases.length > 0 && this.parent.win_cases.includes(this.index) ? 140 : 70) + this.layer * 20
             
             // Calculate background color
             if(this.value === 1) {
@@ -77,15 +77,17 @@ function Morpion(layer, index = 0, parent) {
                 fill(0)
                 text(this.index, width/2,height/2)
             } else if(draw_shapes) {
-                if(this.value === 1) { // Draw cross
-                    line(width*0.05, height*0.05, width*0.95, height*0.95)
-                    line(width*0.95, height*0.05, width*0.05, height*0.95)
-                } else if(this.value === 2) { // Draw circle
-                    noFill()
-                    ellipse(width/2, height/2, width*0.9)
-                } else if(this.value === 3) {
-                    triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
-                }
+                // if(!(this.atomic && parent.value === 0)) {
+                    if(this.value === 1) { // Draw cross
+                        line(width*0.05, height*0.05, width*0.95, height*0.95)
+                        line(width*0.95, height*0.05, width*0.05, height*0.95)
+                    } else if(this.value === 2) { // Draw circle
+                        noFill()
+                        ellipse(width/2, height/2, width*0.9)
+                    } else if(this.value === 3) {
+                        triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
+                    }
+                // }
             }
         }
 
@@ -180,6 +182,10 @@ function Morpion(layer, index = 0, parent) {
             this.setDraw()
             this.parent.update()
         }
+
+        if(this.parent && this.parent.master && this.value === -1) {
+            this.removeDraws()
+        }
     }
 
     // Check if three cases are in win condition
@@ -263,6 +269,24 @@ function Morpion(layer, index = 0, parent) {
         if(!this.atomic) {
             for(let child of this.grid) {
                 child.setDraw()
+            }
+        }
+    }
+
+    this.removeDraws = function() {
+        if(this.value === -1) {
+            this.value = 0
+
+            if(this.atomic) {
+                atomics.push(this)
+            }
+        }
+
+        if(!this.atomic) {
+            for(let child of this.grid) {
+                if(child.value === -1) {
+                    child.removeDraws()
+                }
             }
         }
     }
