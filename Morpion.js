@@ -1,195 +1,252 @@
-function Morpion(layer, index = 0, parent) {
-    this.atomic = (layer === 0) // last layer
-    this.master = (parent === undefined) // first layer
-    this.parent = parent // parent morpion (if not master layer)
+const colors = [[255,0,0],[0,0,255]]
+const win_checks = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ]
+const EMPTY = 0, DRAW = -1, DISABLED = -2
 
-    this.layer = layer // layer value (0 -> max layer) / (atomic layer -> master layer)
-    this.index = index // index in parent (0-9)
-    this.value = 0 // current value (0: unclaimed, 1/2: player)
-    this.win_cases = []
+function getPlayerColor(player) {
+    return colors[player-1]
+}
 
-    // If not in atomic layer
-    if (!this.atomic) {
-        this.grid = []
+class Morpion {
+    constructor(layer, index, parent, masterParent) {
+        this.atomic = (layer === 0)
+        this.master = (parent === undefined)
+        this.parent = parent
+        this.masterParent = masterParent
 
-        // Create and populate grid with 9 Morpion child objects
-        for(let i in [...Array(9).keys()]) {
-            this.grid.push(new Morpion(layer - 1, Number(i), this))
+        if(masterParent) {
+            this.atomics = masterParent.atomics
+            this.nextZone = masterParent.nextZone
         }
-    } else {
-        atomics.push(this) // Reference this case as atomic
+
+        this.layer = layer
+        this.index = index
+
+        this.initialize()
     }
 
-    // Draws a morpion and all its childs recursively
-    this.draw = function() {
-        /// RECURSIVE PART ///
-        if(!this.atomic) { // If not in atomic layer
-            push()
-            scale(1/3)
+    initialize() {
+        this.value = EMPTY
 
-            for(let y = 0; y < 3; y++) {
-                push()
-
-                for(let x = 0; x < 3; x++) {  
-                    this.grid[y*3 + x].draw() 
-                    translate(width, 0)
-                }
-
-                pop()
-                translate(0, height)
-            }
-            pop()
+        if(this.master) {
+            this.atomics = []
+            this.nextZone = []
         }
 
-        /// DRAWING PART ///
-        if(!this.master) { // If not in master layer
-            // Calculate background alpha value
-            const alpha = (this.parent.win_cases.length > 0 && this.parent.win_cases.includes(this.index) ? 150 : 70) + this.layer * 20
-            
-            // Calculate background color
-            if(this.value === 1) {
-                fill(255, 0, 0, alpha) // player "red"
-            } else if(this.value === 2) {
-                fill(0, 0, 255, alpha) // player "blue"
-            } else if(this.value === 3) {
-                fill(255, 255, 0, alpha)
-            } else if (this.value === -1) { // Draw game.
-                this.parent.master === false ?
-                    fill(0, 0, 0, 140)
-                :
-                    fill(255, 255, 255, 160)
-            } else { // no player
-                const index = this.parent ? this.parent.index : 0
-
-                if(!this.atomic && gray_checker && (this.index%2===0 && index%2===0 || this.index%2===1 && index%2===1)) {
-                    fill(0, 0, 0, 40) // grey case
-                } else {
-                    noFill() // white case
-                }
-            }
+        if (!this.atomic) {
+            this.grid = []
     
-            strokeWeight(12)
-            rect(0,0,width-1,height-1) // fill with background color
-            strokeWeight(25)
-
-            if(this.value === 0 && show_numbers) { // Draw number (if enabled)
-                fill(0)
-                text(this.index, width/2,height/2)
-            } else if(draw_shapes !== 'false') {
-                if(draw_shapes === 'true' || 
-                   draw_shapes === 'hybrid' && !(this.atomic && parent.value === 0)) {
-                    if(this.value === 1) { // Draw cross
-                        line(width*0.05, height*0.05, width*0.95, height*0.95)
-                        line(width*0.95, height*0.05, width*0.05, height*0.95)
-                    } else if(this.value === 2) { // Draw circle
-                        noFill()
-                        ellipse(width/2, height/2, width*0.9)
-                    } else if(this.value === 3) { // Draw triangle
-                        noFill()
-                        triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
-                    }
-                }
+            for(let i in [...Array(9).keys()]) {
+                this.grid.push(
+                    new Morpion(
+                        this.layer - 1, 
+                        Number(i), 
+                        this, 
+                        this.masterParent || this
+                    ))
             }
-        }
-
-        if(last_zone && this.getPath().startsWith(last_zone)) {
-            strokeWeight(1)
-            fill(100,255,100,100)
-            rect(0,0,width-1,height-1) // fill with background color
-        }
-    }
-
-    // Clicks on an atomic case, return 1 if the move if valid, 0 otherwise
-    this.click = function() {
-        if(this.value === 0) {
-            const path = this.getPath()
-
-            if(last_zone !== null) {
-                if(!path.slice(0, -5).startsWith(last_zone)) {
-                    return 0
-                }
-            }
-
-            this.value = player
-            last_zone = path.slice(5)
-            this.debugPath("clicked")
-
-            this.parent.update()
-            checkNextZoneAvailability()
-            return 1
         } else {
-            return 0
+            this.atomics.push(this)
         }
     }
 
-    // Recursively detect which atomic case is clicked. Return 1 if the case is valid, 0 otherwise
-    this.isClicked = function(x_start, y_start, offset) {
-        if(this.value !== 0) {
-            return 0
+    draw() {
+        if(!this.atomic) {
+            this.drawChilds()
         }
 
+        if(!this.master) {
+            if(this.value === EMPTY || this.value === DISABLED) {
+                noFill()
+            } else if(this.value === DRAW) {
+                this.parent.master ? fill(255, 160) : fill(0, 140)
+            } else {
+                fill([...getPlayerColor(this.value), 100])
+            }
+
+            rect(0, 0, width-1, height-1)
+
+            if(this.value === 1) { // Draw cross
+                line(width*0.05, height*0.05, width*0.95, height*0.95)
+                line(width*0.95, height*0.05, width*0.05, height*0.95)
+            } else if(this.value === 2) { // Draw circle
+                noFill()
+                ellipse(width/2, height/2, width*0.9)
+            } else if(this.value === 3) { // Draw triangle
+                noFill()
+                triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
+            }
+
+            if(JSON.stringify(this.getPathArray()) === JSON.stringify(this.nextZone)) {
+                strokeWeight(1)
+                fill(100,255,100,100)
+                rect(0,0,width-1,height-1) // fill with background color
+            }
+        }
+    }
+
+    drawChilds() {
         if(this.atomic) {
-            if(mouseX > x_start && mouseX < x_start + offset && 
-               mouseY > y_start && mouseY < y_start + offset) {
-
-                return this.click()
-            }
-        } else {
-            offset /= 3
-
-            for(let y = 0; y < 3; y++) {
-                for(let x = 0; x < 3; x++) {
-                    const index = y*3 + x
-                    if(this.grid[index].isClicked(x_start + x * offset, y_start + y * offset, offset) === 1) {
-                        return 1
-                    }
-                }
-            }
+            throw new Error("Trying to draw childs of an atomic object")
         }
 
-        return 0
+        push()
+        scale(1/3)
+
+        for(let y = 0; y < 3; y++) {
+            push()
+
+            for(let x = 0; x < 3; x++) {  
+                this.grid[y*3 + x].draw() 
+                translate(width, 0)
+            }
+
+            pop()
+            translate(0, height)
+        }
+        pop()
     }
 
-    // Recursively checks for win conditions and updates parents objects
-    this.update = function() {
-        const win_checks = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ]
+    playPath(path, player) {
+        if(this.atomic) {
+            this.play(player)
+        } else if(path.length === 0) {
+            throw new Error("Invalid path")
+        } else {
+            this.grid[path[0]].playPath(path.slice(1), player)
+        }
+    }
+
+    playRandomValidAtomic(player) {
+        if(!player) {
+            throw new Error("Invalid player: " + player)
+        } else if(!this.master) {
+            throw new Error("You can only play a valid atomic from the master object")
+        }
+
+        const validZone = this.getChild(this.nextZone)
+        const validAtomic = validZone.getRandomValidAtomicChild()
+        validAtomic.play(player)
+    }
+
+    getRandomValidAtomicChild() {
+        const valid_childs = this.grid.filter(child => child.value === EMPTY)
+
+        if(valid_childs.length === 0) {
+            throw new Error("No valid child for object " + this.getPath())
+        }
+
+        if(this.layer === 1) {
+            return valid_childs[floor(random(valid_childs.length))]
+        } else {
+            return valid_childs[floor(random(valid_childs.length))].getRandomValidAtomicChild()
+        }
+    }
+
+    play(player) {
+        if(!this.atomic) {
+            throw new Error("Trying to play on a non-atomic object: " + this.getPath())
+        } else if(!this.isInNextZone()) {
+            throw new Error("This atomic is not inside the next valid zone: " + this.getPath())
+        } else if(this.value !== EMPTY) {
+            throw new Error("Trying to play on " + this.getPath() + " which already has a value of " + this.value)
+        }
+
+        this.debug("Play: " + this.getPath())
+
+        this.value = player
+        this.removeFromAtomics()
+
+        if(!this.parent.winUpdate(player)) {
+            this.parent.drawUpdate()
+        }
+
+        this.updateNextZone()
+    }
+
+    winUpdate(player) {
+        for(let win of win_checks) {
+            if(this.checkWin(win)) {
+                if(this.master){
+                    ///
+                    this.value = player
+                    this.debug('Set Master: ' + this.value)
+                    noLoop()
+                    stop()
+                    return
+                }
+                this.disableChilds(true)
+                this.parent.drawUpdate()
+
+                this.debug(this.getPath() + ': set win (' + player + ')')
+                this.value = player
+
+                if(!this.parent.winUpdate(player)) {
+                    this.parent.drawUpdate()
+                }
+                return true
+            }
+        }
         
-        for(let win_check of win_checks) {
-            const winner = this.checkWin(win_check)
+        return false
+    }
 
-            if(winner !== 0) {
-                this.value = winner
-                this.win_cases = win_check
-                this.debugPath("updated: " + this.value)
+    drawUpdate() {
+        if(this.checkDraw()) {
+            this.debug(this.getPath() + ': set draw')
 
-                if(autoplay) {
-                    this.removeFromAtomicsCollection()
-                }
-
-                if(this.master) {
-                    gameOver(winner)
-                } else {
-                    this.setDraw()
-                    this.parent.update()
-                }
-
+            if(this.master){
+                ///
+                this.debug('Set Master: ' + this.value)
+                noLoop()
+                stop()
                 return
             }
+            this.disableChilds(true)
+            this.value = DRAW
+            if(!this.master){
+                this.parent.drawUpdate()
+            }
+            return true
         }
 
-        if(this.getEmptyCases() === 0 && !this.master) {
-            this.value = -1
-            this.debugPath("updated: " + this.value)
-            this.setDraw()
-            this.parent.update()
+        return false
+    }
+
+    disableChilds(first = false) {
+        if(!first) {
+            this.debug(this.getPath() + ': set disabled')
+            this.value = DISABLED
         }
+
+        if(!this.atomic) {
+            for(let child of this.grid) {
+                if(child.value === EMPTY) {
+                    child.disableChilds()
+                }
+            }
+        } else {
+            this.removeFromAtomics()
+        }
+    }
+
+    removeFromAtomics() {
+        if(!this.atomic) {
+            throw new Error("Trying to remove a non-atomic object from the atomic collection: " + this.getPath())
+        }
+        const index = this.atomics.indexOf(this)
+
+        if(index === -1) {
+            throw new Error("Trying to remove an already removed atomic from the atomic collection: " + this.getPath())
+        }
+
+        this.atomics.splice(index, 1)
     }
 
     // Check if three cases are in win condition
-    this.checkWin = function(check) {
+    checkWin(check) {
         const [a, b, c] = check
 
-        if (this.grid[a].value > 0 &&
+        if (this.grid[a].value > EMPTY &&
             this.grid[a].value === this.grid[b].value && 
             this.grid[a].value === this.grid[c].value) {
             return this.grid[a].value
@@ -198,59 +255,51 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
-    // Remove a case from atomic collection recursively (used when automatic mode is playing)
-    this.removeFromAtomicsCollection = function() {
+    checkDraw() {
         if(this.atomic) {
-            const index_in_collection = atomics.indexOf(this)
+            throw new Error("Trying to check for draw on an atomic object")
+        }
 
-            if(index_in_collection !== -1) {
-                this.debugPath("removed")
-                atomics.splice(index_in_collection, 1)
+        for(let child of this.grid) {
+            if(child.value === EMPTY) {
+                return false
             }
+        }
+
+        return true
+    }
+
+    isInNextZone() {
+        const path = this.getPathArray()
+
+        let i = 0
+        for(let elm of this.nextZone) {
+            if(elm !== path[i]) {
+                return false
+            }
+            i++
+        }
+
+        return true
+    }
+
+    updateNextZone() {
+        const nextZone = this.getPathArray().slice(1)
+        const nextValidZone = this.masterParent.getNextValidZone(nextZone)
+
+        this.nextZone.length = 0
+        this.nextZone.push(...nextValidZone)
+    }
+
+    getNextValidZone(nextZone) {
+        if(nextZone.length === 0 || this.grid[nextZone[0]].value !== EMPTY) {
+            return this.getPathArray()
         } else {
-            for(let child of this.grid) {
-                child.removeFromAtomicsCollection()
-            }
+            return this.grid[nextZone[0]].getNextValidZone(nextZone.slice(1))
         }
     }
 
-    // Return an array of indexes representing playables cases from a path (last_zone)
-    this.getPlayables = function() {
-        if(this.atomic) {
-            if(this.value === 0) {
-                return [atomics.indexOf(this)]
-            }
-        } else {
-            let valid_childs = []
-
-            for(let child of this.grid) {
-                if(child.value === 0) {
-                    valid_childs = valid_childs.concat(child.getPlayables())
-                }
-            }
-
-            return valid_childs
-        }
-    }
-
-    // Returns the number of playable cases
-    this.getEmptyCases = function() {
-        let count = 0
-
-        if(this.value !== 0 || this.atomic) {
-            return 0
-        }
-
-        for(let element of this.grid) {
-            if(element.value === 0) {
-                count++
-            }
-        }
-
-        return count
-    }
-
-    this.getChild = function(path) {
+    getChild(path) {
         if(path.length === 0) {
             return this
         } else {
@@ -258,67 +307,25 @@ function Morpion(layer, index = 0, parent) {
         }
     }
 
-    this.setDraw = function(first) {
-        if(this.value === 0 && !first) {
-            this.debugPath("set draw (-1)")
-            this.value = -2
-        }
-
-        if(!this.atomic) {
-            for(let child of this.grid) {
-                child.setDraw()
-            }
+    debug(str) {
+        if (debug_logs) {
+            print(str)
         }
     }
 
-    this.removeDraws = function(force = false) {
-        if(this.value === -1 || this.atomic || force) {
-            this.debugPath("reset (0)")
-            this.value = 0
-
-            if(this.atomic) {
-                atomics.push(this)
-            }
-        }
-
-        if(!this.atomic) {
-            for(let child of this.grid) {
-                if(child.value === -1 || child.atomic || force) {
-                    child.removeDraws(force)
-                }
-            }
-        }
+    getPath() {
+        return this.parent ? (this.parent.master ? this.index.toString() : (this.parent.getPath() + ' -> ' + this.index)) : 'master'
     }
 
-    this.getValues = function() {
-        let values = []
-
-        if(!this.atomic) {
-            this.grid.forEach( elm => {
-                values.push(elm.value)
-            })
+    getPathArray() {
+        if(this.master) {
+            return []
         }
 
-        return values
-    }
-
-    // prints the path along with the debug message if debug mode is enabled
-    this.debugPath = function(action) {
-        if(debug_logs) {
-            print(this.getPath() + ': ' + action)
+        if(!this.parent.master) {
+            return [...this.parent.getPathArray(), this.index]
+        } else {
+            return [this.index]
         }
     }
-
-    // Gets path from each parent until the master layer as a string
-    this.getPath = function() {
-        return this.parent ? (this.parent.master ? this.index.toString() : (parent.getPath() + ' -> ' + this.index)) : 'master'
-    }
-
-    // this.getPathArray = function() {
-    //     if(!this.parent.master) {
-    //         return [...this.parent.getPathArray(), this.index]
-    //     } else {
-    //         return [this.index]
-    //     }
-    // }
 }
