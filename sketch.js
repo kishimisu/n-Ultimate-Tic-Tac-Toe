@@ -1,6 +1,9 @@
-const debug_logs = true
+const debug_logs = false
+const speed = 20
 
-let m = new Morpion(4)
+p5.disableFriendlyErrors = true
+
+let m = new Morpion(3)
 
 function setup() {
     createCanvas(500, 500)
@@ -13,7 +16,6 @@ function setup() {
     // noLoop()
 }
 
-let speed = 20
 function draw() {
     background(255)
     for(let i = 0; i < speed;i++) {
@@ -29,9 +31,6 @@ function draw() {
 
 let pl = 1
 function mouseClicked() {
-    // m.playRandomValidAtomic(pl)
-    // pl=pl===1?2:1
-    // redraw()
     // if(mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
     //     return
     // }

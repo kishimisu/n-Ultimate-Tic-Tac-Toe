@@ -12,6 +12,7 @@ class Morpion {
         this.master = (parent === undefined)
         this.parent = parent
         this.masterParent = masterParent
+        this.win_highlight = false
 
         if(masterParent) {
             this.atomics = masterParent.atomics
@@ -55,15 +56,19 @@ class Morpion {
         }
 
         if(!this.master) {
+            const alpha = (this.win_highlight ? 150 : 70) + this.layer * 20
+
             if(this.value === EMPTY || this.value === DISABLED) {
                 noFill()
             } else if(this.value === DRAW) {
                 this.parent.master ? fill(255, 160) : fill(0, 140)
             } else {
-                fill([...getPlayerColor(this.value), 100])
+                fill([...getPlayerColor(this.value), alpha])
             }
 
+            strokeWeight(12)
             rect(0, 0, width-1, height-1)
+            strokeWeight(25)
 
             if(this.value === 1) { // Draw cross
                 line(width*0.05, height*0.05, width*0.95, height*0.95)
@@ -166,6 +171,10 @@ class Morpion {
     winUpdate(player) {
         for(let win of win_checks) {
             if(this.checkWin(win)) {
+                for(let i of win) {
+                    this.grid[i].win_highlight = true
+                }
+
                 if(this.master){
                     ///
                     this.value = player
