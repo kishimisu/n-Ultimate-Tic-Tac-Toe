@@ -12,7 +12,6 @@ class Morpion {
         this.master = (parent === undefined)
         this.parent = parent
         this.masterParent = masterParent
-        this.win_highlight = false
 
         if(masterParent) {
             this.atomics = masterParent.atomics
@@ -27,6 +26,7 @@ class Morpion {
 
     initialize() {
         this.value = EMPTY
+        this.win_highlight = false
 
         if(this.master) {
             this.atomics = []
@@ -55,6 +55,7 @@ class Morpion {
             this.drawChilds()
         }
 
+        push()
         if(!this.master) {
             const alpha = (this.win_highlight ? 150 : 70) + this.layer * 20
 
@@ -70,7 +71,10 @@ class Morpion {
             rect(0, 0, width-1, height-1)
             strokeWeight(25)
 
-            if(this.value === 1) { // Draw cross
+            if(debug_logs) {
+                fill(0)
+                text(this.value, width/2,height/2)
+            } else if(this.value === 1) { // Draw cross
                 line(width*0.05, height*0.05, width*0.95, height*0.95)
                 line(width*0.95, height*0.05, width*0.05, height*0.95)
             } else if(this.value === 2) { // Draw circle
@@ -86,7 +90,13 @@ class Morpion {
                 fill(100,255,100,100)
                 rect(0,0,width-1,height-1) // fill with background color
             }
+        } else if(this.nextZone.length === 0) {
+            noFill()
+            stroke(100,255,100)
+            strokeWeight(20)
+            rect(0,0,width-1,height-1) 
         }
+        pop()
     }
 
     drawChilds() {
@@ -176,13 +186,11 @@ class Morpion {
                 }
 
                 if(this.master){
-                    ///
                     this.value = player
-                    this.debug('Set Master: ' + this.value)
-                    noLoop()
-                    stop()
+                    gameOver()
                     return
                 }
+
                 this.disableChilds(true)
                 this.parent.drawUpdate()
 
@@ -204,12 +212,10 @@ class Morpion {
             this.debug(this.getPath() + ': set draw')
 
             if(this.master){
-                ///
-                this.debug('Set Master: ' + this.value)
-                noLoop()
-                stop()
+                gameOver()
                 return
             }
+
             this.disableChilds(true)
             this.value = DRAW
             if(!this.master){
