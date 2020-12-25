@@ -71,9 +71,9 @@ class Morpion {
             rect(0, 0, width-1, height-1)
             strokeWeight(25)
 
-            if(debug_logs) {
+            if(debug_attribute !== 'none') {
                 fill(0)
-                text(this.value, width/2,height/2)
+                text(debug_attribute === 'value' ? this.value : this.index, width/2,height/2)
             } else if(this.value === 1) { // Draw cross
                 line(width*0.05, height*0.05, width*0.95, height*0.95)
                 line(width*0.95, height*0.05, width*0.05, height*0.95)
@@ -139,23 +139,71 @@ class Morpion {
         }
 
         const validZone = this.getChild(this.nextZone)
-        const validAtomic = validZone.getRandomValidAtomicChild()
-        validAtomic.play(player)
-    }
+        const validAtomics = validZone.getValidAtomics()
 
-    getRandomValidAtomicChild() {
-        const valid_childs = this.grid.filter(child => child.value === EMPTY)
-
-        if(valid_childs.length === 0) {
-            throw new Error("No valid child for object " + this.getPath())
+        if(validAtomics.length === 0) {
+            throw new Error("Could not find any valid atomic for " + this.getPath())
         }
 
-        if(this.layer === 1) {
-            return valid_childs[floor(random(valid_childs.length))]
-        } else {
-            return valid_childs[floor(random(valid_childs.length))].getRandomValidAtomicChild()
-        }
+        const randomAtomic = validAtomics[floor(random(validAtomics.length))]
+
+        randomAtomic.play(player)
     }
+
+    // getRandomValidAtomicChild() {
+    //     const valid_childs = this.grid.filter(child => child.value === EMPTY)
+
+    //     if(valid_childs.length === 0) {
+    //         throw new Error("No valid child for object " + this.getPath())
+    //     }
+
+    //     if(this.layer === 1) {
+    //         return valid_childs[floor(random(valid_childs.length))]
+    //     } else {
+    //         return valid_childs[floor(random(valid_childs.length))].getRandomValidAtomicChild()
+    //     }
+    // }
+
+    getValidAtomics() {
+        if(this.atomic) {
+            throw new Error("This function cannot be called on an atomic object")
+        }
+
+        const atomics = []
+
+        this.grid.forEach(elm => {
+            if(elm.value === EMPTY) {
+                if(this.layer === 1) {
+                    atomics.push(elm)
+                } else {
+                    atomics.push(...elm.getValidAtomics())
+                }
+            }
+        })
+
+        return atomics
+    }
+
+    //     if(this.layer === 1) {
+    //         const valid_atomics = []
+
+    //         this.grid.forEach(elm => {
+    //             if(elm.value === EMPTY) {
+    //                 valid_atomics.add(elm)
+    //             }
+    //         })
+
+    //         return valid_atomics
+    //     } else {
+    //         const valid_atomics = []
+
+    //         this.grid.forEach(elm => {
+    //             if(elm.value === EMPTY) {
+    //                 return
+    //             }
+    //         })
+    //     }
+    // }
 
     play(player) {
         if(!this.atomic) {
@@ -166,6 +214,8 @@ class Morpion {
             throw new Error("Trying to play on " + this.getPath() + " which already has a value of " + this.value)
         }
 
+        let has_win = true
+
         this.debug("Play: " + this.getPath())
 
         this.value = player
@@ -173,9 +223,12 @@ class Morpion {
 
         if(!this.parent.winUpdate(player)) {
             this.parent.drawUpdate()
+            has_win = false
         }
 
         this.updateNextZone()
+
+        return has_win
     }
 
     winUpdate(player) {
@@ -342,5 +395,29 @@ class Morpion {
         } else {
             return [this.index]
         }
+    }
+
+    getStats(stats) {
+        if(this.master) {
+            stats = []
+        } else { 
+            if(stats[this.layer] === undefined) {
+                stats[this.layer] = []
+            }
+            
+            if(stats[this.layer][this.value] === undefined) {
+                stats[this.layer][this.value] = 1
+            } else {
+                stats[this.layer][this.value]++
+            }
+        }
+
+        if(this.layer !== 1) {
+            this.grid.forEach(child => {
+                child.getStats(stats)
+            })
+        }
+
+        return stats
     }
 }

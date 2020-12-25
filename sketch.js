@@ -1,12 +1,14 @@
 let debug_logs = false
+let debug_attribute = 'none' // 'none' : 'value' : 'index'
 
-let autoplay = false
-let speed = 20
+let autoplay = true
+let simulate = false
+let speed = 10
 let max_player = 2
 
 p5.disableFriendlyErrors = true
 
-let m = new Morpion(2)
+let m = new Morpion(3)
 let player = 1
 let game_over = false
 
@@ -15,40 +17,52 @@ function setup() {
     textAlign(CENTER, CENTER)
     textSize(200)
 
-    if(!autoplay) {
-        noLoop()
-    }
-
     m.draw()
 
-    // let start = millis()
-    // while(!game_over) {
-    //     m.playRandomValidAtomic(player)
-    //     switchPlayers()
-    // }
-    // let time_elapsed = (millis() - start) / 1000 
-    // console.log('match simulation: ' + time_elapsed.toFixed(3) + 's')
-    // start = millis()
-    // m.draw()
-    // time_elapsed = (millis() - start) / 1000 
-    // console.log('grid draw: ' + time_elapsed.toFixed(3) + 's')
+    if(simulate) {
+        simulation()
+    }
+}
+
+function simulation() {
+    do {
+        let start = millis()
+
+        while(!game_over) {
+            AI()
+        }
+        
+        let time_elapsed = (millis() - start) / 1000 
+        // console.log('match simulation: ' + time_elapsed.toFixed(3) + 's')
+
+        start = millis()
+        m.draw()
+
+        time_elapsed = (millis() - start) / 1000 
+        // console.log('grid draw: ' + time_elapsed.toFixed(3) + 's')
+
+        noLoop()
+        m.initialize()
+        player = 1
+        game_over = false
+    } while (true)
 }
 
 function draw() {
-    if(!autoplay || game_over) {
+    if(!autoplay || game_over || simulate) {
+        if(!autoplay && !game_over) {
+            drawGame()
+        }
         return
     }
 
-    if(!game_over) {
-        for(let i = 0; i < speed; i++) {
-            if(m.value !==0 || m.atomics.length === 0) {
-                gameOver()
-                break
-            }
-
-            m.playRandomValidAtomic(player)
-            switchPlayers()
+    for(let i = 0; i < speed; i++) {
+        if(m.value !==0 || m.atomics.length === 0) {
+            gameOver()
+            break
         }
+
+        AI()
     }
 
     drawGame()
@@ -65,10 +79,6 @@ function switchPlayers() {
     if(player > max_player) {
         player = 1
     }
-
-    if(player > 1) {
-        setTimeout(IA_Play, random(0.2,0.8) * 1000)
-    }
 }
 
 function drawGame() {
@@ -76,14 +86,43 @@ function drawGame() {
     m.draw()
 }
 
-function IA_Play() {
-    m.playRandomValidAtomic(player)
-    drawGame()
+function ffGame(count) {
+    for(let i = 0; i < count; i++) {
+        if(m.value !==0 || m.atomics.length === 0) {
+            gameOver()
+            break
+        }
+
+        AI()
+    }
+}
+
+function AI() {
+    if(autoplay) {
+        if(player === 1) {
+            AI_Play('bruteforce')
+        } else {
+            AI_Play('random')
+        }
+    } else {
+        setTimeout(AI_Play,1000)
+    }
+}
+
+function AI_Play(mode) {
+    if(mode === 'bruteforce') {
+        if(!bruteForce()) {
+            m.playRandomValidAtomic(player)
+        }
+    } else {
+        m.playRandomValidAtomic(player)
+    }
+
     switchPlayers()
 }
 
 function mouseClicked() {
-    if(autoplay || player === 2 || mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
+    if(autoplay || game_over || player === 2 || mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
         return
     }
 
@@ -97,6 +136,27 @@ function mouseClicked() {
     const path = [x0+y0*3,x1+y1*3,x2+y2*3]
 
     m.playPath(path, player)
-    drawGame()
+
+    if(game_over) {
+        return
+    }
     switchPlayers()
+    AI()
+}
+
+function bruteForce() {
+    const valid_zone = m.getChild(m.nextZone)
+    const valid_atomics = valid_zone.getValidAtomics()
+
+    for(let elm of valid_atomics) {
+        const atomic = _.cloneDeep(elm)
+
+        if(atomic.play(player)) {
+            m.playPath(atomic.getPathArray(), player)
+            // console.log('forced win on ' + atomic.getPath())
+            return true
+        }
+    }
+
+    return false
 }
