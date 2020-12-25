@@ -7,6 +7,10 @@ function getPlayerColor(player) {
 }
 
 class Morpion {
+    // layer: current layer
+    // index: index in parent's grid (0-8)
+    // parent: reference to parent object
+    // masterParent: reference to master object
     constructor(layer, index, parent, masterParent) {
         this.atomic = (layer === 0)
         this.master = (parent === undefined)
@@ -24,6 +28,7 @@ class Morpion {
         this.initialize()
     }
 
+    // Recursively initalize a Morpion object
     initialize() {
         this.value = EMPTY
         this.win_highlight = false
@@ -50,6 +55,7 @@ class Morpion {
         }
     }
 
+    // Recursively draw the object and its childs
     draw() {
         if(!this.atomic) {
             this.drawChilds()
@@ -99,6 +105,9 @@ class Morpion {
         pop()
     }
 
+    // Do not call this function yourself
+    // Recursively translate and scale the drawing area
+    // Used in draw()
     drawChilds() {
         if(this.atomic) {
             throw new Error("Trying to draw childs of an atomic object")
@@ -121,6 +130,9 @@ class Morpion {
         pop()
     }
 
+    // Plays the atomic object at a specific path from the current Morpion object
+    // path: the path to the atomic child represented as an array of integers (ex. [3,2,5])
+    // player: current player ( >= 1 )
     playPath(path, player) {
         if(this.atomic) {
             this.play(player)
@@ -131,6 +143,8 @@ class Morpion {
         }
     }
 
+    // Plays a random valid atomic that is a child of the current object
+    // player: current player ( >= 1 )
     playRandomValidAtomic(player) {
         if(!player) {
             throw new Error("Invalid player: " + player)
@@ -150,20 +164,7 @@ class Morpion {
         randomAtomic.play(player)
     }
 
-    // getRandomValidAtomicChild() {
-    //     const valid_childs = this.grid.filter(child => child.value === EMPTY)
-
-    //     if(valid_childs.length === 0) {
-    //         throw new Error("No valid child for object " + this.getPath())
-    //     }
-
-    //     if(this.layer === 1) {
-    //         return valid_childs[floor(random(valid_childs.length))]
-    //     } else {
-    //         return valid_childs[floor(random(valid_childs.length))].getRandomValidAtomicChild()
-    //     }
-    // }
-
+    // Returns an array containing all the valid atomics that are childs of the current object
     getValidAtomics() {
         if(this.atomic) {
             throw new Error("This function cannot be called on an atomic object")
@@ -184,27 +185,12 @@ class Morpion {
         return atomics
     }
 
-    //     if(this.layer === 1) {
-    //         const valid_atomics = []
-
-    //         this.grid.forEach(elm => {
-    //             if(elm.value === EMPTY) {
-    //                 valid_atomics.add(elm)
-    //             }
-    //         })
-
-    //         return valid_atomics
-    //     } else {
-    //         const valid_atomics = []
-
-    //         this.grid.forEach(elm => {
-    //             if(elm.value === EMPTY) {
-    //                 return
-    //             }
-    //         })
-    //     }
-    // }
-
+    // Base function to play a move
+    // player: current player ( >= 1 )
+    // Throws an error if :
+    // - The object is not atomic
+    // - The object is not in the next playable zone 
+    // - The object already has a value
     play(player) {
         if(!this.atomic) {
             throw new Error("Trying to play on a non-atomic object: " + this.getPath())
@@ -231,6 +217,8 @@ class Morpion {
         return has_win
     }
 
+    // Do not call this function yourself
+    // Recursively check for win conditions after a win update
     winUpdate(player) {
         for(let win of win_checks) {
             if(this.checkWin(win)) {
@@ -260,6 +248,8 @@ class Morpion {
         return false
     }
 
+    // Do not call this function yourself
+    // Recursively check for draw conditions after a draw update
     drawUpdate() {
         if(this.checkDraw()) {
             this.debug(this.getPath() + ': set draw')
@@ -280,6 +270,38 @@ class Morpion {
         return false
     }
 
+    // Return true if three cases are in win condition
+    // check: an array of 3 indexes (ex: [0,1,2])
+    checkWin(check) {
+        const [a, b, c] = check
+
+        if (this.grid[a].value > EMPTY &&
+            this.grid[a].value === this.grid[b].value && 
+            this.grid[a].value === this.grid[c].value) {
+            return this.grid[a].value
+        } else {
+            return 0
+        }
+    }
+
+    // Return true if the object's grid is in draw condition
+    checkDraw() {
+        if(this.atomic) {
+            throw new Error("Trying to check for draw on an atomic object")
+        }
+
+        for(let child of this.grid) {
+            if(child.value === EMPTY) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    // Recursively disable all the childs objects (atomcis and non-atomics)
+    // first: call this function with true to ignore the first object and keep 
+    // its current value instead of setting it to DISABLED
     disableChilds(first = false) {
         if(!first) {
             this.debug(this.getPath() + ': set disabled')
@@ -297,6 +319,8 @@ class Morpion {
         }
     }
 
+    // Remove the object from the master's atomics array
+    // Must be called on an atomic object
     removeFromAtomics() {
         if(!this.atomic) {
             throw new Error("Trying to remove a non-atomic object from the atomic collection: " + this.getPath())
@@ -310,33 +334,7 @@ class Morpion {
         this.atomics.splice(index, 1)
     }
 
-    // Check if three cases are in win condition
-    checkWin(check) {
-        const [a, b, c] = check
-
-        if (this.grid[a].value > EMPTY &&
-            this.grid[a].value === this.grid[b].value && 
-            this.grid[a].value === this.grid[c].value) {
-            return this.grid[a].value
-        } else {
-            return 0
-        }
-    }
-
-    checkDraw() {
-        if(this.atomic) {
-            throw new Error("Trying to check for draw on an atomic object")
-        }
-
-        for(let child of this.grid) {
-            if(child.value === EMPTY) {
-                return false
-            }
-        }
-
-        return true
-    }
-
+    // Return true if the object is located in the next valid zone
     isInNextZone() {
         const path = this.getPathArray()
 
@@ -351,6 +349,7 @@ class Morpion {
         return true
     }
 
+    // Update the nextZone attribute based on the current object's path
     updateNextZone() {
         const nextZone = this.getPathArray().slice(1)
         const nextValidZone = this.masterParent.getNextValidZone(nextZone)
@@ -359,6 +358,7 @@ class Morpion {
         this.nextZone.push(...nextValidZone)
     }
 
+    // Returns the smallest zone containing valid atomics, starting from nextZone
     getNextValidZone(nextZone) {
         if(nextZone.length === 0 || this.grid[nextZone[0]].value !== EMPTY) {
             return this.getPathArray()
@@ -367,6 +367,8 @@ class Morpion {
         }
     }
 
+    // Get the child of the current object from a path
+    // path: the path to the atomic child represented as an array of integers (ex. [3,2,5])
     getChild(path) {
         if(path.length === 0) {
             return this
@@ -375,16 +377,20 @@ class Morpion {
         }
     }
 
+    // Equivalent to print(), but activated only when the global variable
+    // debug_logs is true
     debug(str) {
         if (debug_logs) {
             print(str)
         }
     }
-
+ 
+    // Returns the path of the current object from the master object as a string (ex: 2 -> 3 -> 5)
     getPath() {
         return this.parent ? (this.parent.master ? this.index.toString() : (this.parent.getPath() + ' -> ' + this.index)) : 'master'
     }
 
+    // Returns the path of the current object from the master object as an array of integers (ex: [2,3,5])
     getPathArray() {
         if(this.master) {
             return []
@@ -397,6 +403,7 @@ class Morpion {
         }
     }
 
+    // Returns an array containing the number of cases for each player at each layer, excluding the atomic layer
     getStats(stats) {
         if(this.master) {
             stats = []
