@@ -177,63 +177,73 @@ function bruteForce_() {
     const valid_atomics = valid_zone.getValidAtomics()
     let arr = []
 
+    // Calculate player's points before the simulation of his turn.
+    const pts_before = calculatePointsBruteForce(m.getStats())
+
     // console.log("Try brute force")
+
+    // Loop through the possible moves of the player.
     for (let elm of valid_atomics) {
+        // Cloning the selected atomic and the game board to not affect the real board.
         const atomic = _.cloneDeep(elm)
         let game_save = _.cloneDeep(m)
-        let ok = true
-        let opp_pts
+        let ok = true // Is the move no too bad (opponent doesn't win ?)
 
         game_save.playPath(atomic.getPathArray(), player)
-
+        
+        // This move makes the player win.
         if (game_over) {
-            game_over = false
-            m.playPath(atomic.getPathArray(), player)
-            return true
+            game_over = false // Cancel global end of game variable.
+            m.playPath(atomic.getPathArray(), player) // Play the move on the real board.
+            return true // Indicates that a move has been made.
         }
 
-        const stats = game_save.getStats()
-        let pts
-        if (stats[2] === undefined)
-            pts = stats[1][player - 1] * 2
-        else 
-            pts = stats[1][player - 1] * 2 + stats[2][player - 1] * 4
+        // Calculate player's points after the move has been made.
+        const pts = calculatePointsBruteForce(game_save.getStats())
 
+        // Switch players before considering the opponent's possible responses.
         switchPlayers()
         const opp_valid_zone = game_save.getChild(game_save.nextZone)
         const opp_valid_atomics = opp_valid_zone.getValidAtomics()
 
+        // Calculate opponent's points before the simulation of his turn.
+        const opp_pts_before = calculatePointsBruteForce(game_save.getStats())
+
+        // Loop through possible responses of the opponent.
         for (let opp_elm of opp_valid_atomics) {
+            // Saving stuff before simulating the move of the opponent.
             const opp_atomic = _.cloneDeep(opp_elm)
             let opp_game_save = _.cloneDeep(game_save)
 
+            // Playing the move on the simulated board.
             opp_game_save.playPath(opp_atomic.getPathArray(), player)
 
+            // If the opponent plays a winning move.
             if (game_over) {
-                game_over = false
-                ok = false // Forbidden move
+                game_over = false // Cancel global end of game variable.
+                ok = false // Forbidden move.
                 // console.log("Forbidden move")
-                break
+                break // No need to consider other responses to player's move ==> forbidden move.
             }
 
-            const opp_stats = opp_game_save.getStats()
-            if (opp_stats[2] === undefined)
-                opp_pts = opp_stats[1][player - 1] * 2
-            else 
-                opp_pts = opp_stats[1][player - 1] * 2 + opp_stats[2][player - 1] * 4
+            opp_pts = calculatePointsBruteForce(opp_game_save.getStats())
 
+            // If opponent's points are greated than the player's, don't play the move ?
             if (opp_pts > pts) {
                 ok = false
                 break
             }
         }
 
+        // Switch players back to original player.
         switchPlayers()
-        if (ok === false) {
-            continue
+
+        if (ok === false) { // If move is forbidden.
+            continue // Go to check on another move.
         }
 
-        arr.push([atomic.getPathArray(), pts - opp_pts])
+        // Keep this move with the delta player's points and opponent's points.
+        arr.push([atomic.getPathArray(), pts - pts_before, opp_pts - opp_pts_before])
     }
 
     if (arr.length === 0) {
@@ -252,4 +262,10 @@ function bruteForce_() {
     // console.log(arr)
     m.playPath(arr[0][0], player)
     return true
+}
+
+// Calculaing the points of a given position based on game's stats.
+// This function is way too rudimentary.
+function calculatePointsBruteForce(stats) {
+    return stats[1][player - 1] * 2 + (stats[2] === undefined ? 0 : stats[2][player - 1])
 }
