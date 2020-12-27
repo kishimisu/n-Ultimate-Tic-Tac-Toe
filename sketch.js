@@ -3,7 +3,7 @@ let debug_attribute = 'none' // 'none' : 'value' : 'index'
 
 let autoplay = true
 let simulate = false
-let speed = 10
+let speed = 1
 let max_player = 2
 
 p5.disableFriendlyErrors = true
@@ -13,7 +13,7 @@ let player = 1
 let game_over = false
 
 function setup() {
-    createCanvas(500, 500)
+    createCanvas(600, 600)
     textAlign(CENTER, CENTER)
     textSize(200)
 
@@ -22,6 +22,8 @@ function setup() {
     if(simulate) {
         simulation()
     }
+
+    frameRate(5)
 }
 
 function simulation() {
@@ -99,10 +101,10 @@ function ffGame(count) {
 
 function AI() {
     if(autoplay) {
-        if(player === 1) {
-            AI_Play('bruteforce')
+        if(player === 2) {
+            AI_Play('bruteforce2')
         } else {
-            AI_Play('random')
+            AI_Play('bruteforce')
         }
     } else {
         setTimeout(AI_Play,1000)
@@ -112,6 +114,10 @@ function AI() {
 function AI_Play(mode) {
     if(mode === 'bruteforce') {
         if(!bruteForce()) {
+            m.playRandomValidAtomic(player)
+        }
+    } else if (mode === 'bruteforce2') {
+        if(!bruteForce_()) {
             m.playRandomValidAtomic(player)
         }
     } else {
@@ -159,4 +165,91 @@ function bruteForce() {
     }
 
     return false
+}
+
+function bruteForce_() {
+
+    // 1 - Get all possible moves for player
+    // 2 - Try opponent's responses for each move
+    // 3 - Maximize the outcome ?
+
+    const valid_zone = m.getChild(m.nextZone)
+    const valid_atomics = valid_zone.getValidAtomics()
+    let arr = []
+
+    // console.log("Try brute force")
+    for (let elm of valid_atomics) {
+        const atomic = _.cloneDeep(elm)
+        let game_save = _.cloneDeep(m)
+        let ok = true
+        let opp_pts
+
+        game_save.playPath(atomic.getPathArray(), player)
+
+        if (game_over) {
+            game_over = false
+            m.playPath(atomic.getPathArray(), player)
+            return true
+        }
+
+        const stats = game_save.getStats()
+        let pts
+        if (stats[2] === undefined)
+            pts = stats[1][player - 1] * 2
+        else 
+            pts = stats[1][player - 1] * 2 + stats[2][player - 1] * 4
+
+        switchPlayers()
+        const opp_valid_zone = game_save.getChild(game_save.nextZone)
+        const opp_valid_atomics = opp_valid_zone.getValidAtomics()
+
+        for (let opp_elm of opp_valid_atomics) {
+            const opp_atomic = _.cloneDeep(opp_elm)
+            let opp_game_save = _.cloneDeep(game_save)
+
+            opp_game_save.playPath(opp_atomic.getPathArray(), player)
+
+            if (game_over) {
+                game_over = false
+                ok = false // Forbidden move
+                // console.log("Forbidden move")
+                break
+            }
+
+            const opp_stats = opp_game_save.getStats()
+            if (opp_stats[2] === undefined)
+                opp_pts = opp_stats[1][player - 1] * 2
+            else 
+                opp_pts = opp_stats[1][player - 1] * 2 + opp_stats[2][player - 1] * 4
+
+            if (opp_pts > pts) {
+                ok = false
+                break
+            }
+        }
+
+        switchPlayers()
+        if (ok === false) {
+            continue
+        }
+
+        arr.push([atomic.getPathArray(), pts - opp_pts])
+    }
+
+    if (arr.length === 0) {
+        return false
+    }
+
+    // Pourquoi ca marche pas le tri ????
+    for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i][1] < arr[i + 1][1]) {
+            const tmp = arr[i]
+            arr[i] = arr[i + 1]
+            arr[i + 1] = tmp
+            i--
+        }
+    }
+    // console.log(arr)
+    m.playPath(arr[0][0], player)
+    return true
 }
