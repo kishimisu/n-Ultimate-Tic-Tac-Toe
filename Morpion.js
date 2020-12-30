@@ -15,7 +15,7 @@ class Morpion {
         this.atomic = (layer === 0)
         this.master = (parent === undefined)
         this.parent = parent
-        this.masterParent = masterParent
+        this.masterParent = masterParent || this
 
         if(masterParent) {
             this.atomics = masterParent.atomics
@@ -36,6 +36,8 @@ class Morpion {
         if(this.master) {
             this.atomics = []
             this.nextZone = []
+            this.gameOver = false
+            this.player = 1
         }
 
         if (!this.atomic) {
@@ -47,12 +49,25 @@ class Morpion {
                         this.layer - 1, 
                         Number(i), 
                         this, 
-                        this.masterParent || this
+                        this.masterParent
                     ))
             }
         } else {
             this.atomics.push(this)
         }
+    }
+
+    // Draws the master object at (x,y) with a size of (w,h)
+    drawStretched(x, y, w, h) {
+        if(!this.master) {
+            throw new Error("You can only call drawStretched from the master object")
+        }
+
+        push()
+            translate(x,y)
+            scale(w,h)
+            this.draw()
+        pop()
     }
 
     // Recursively draw the object and its childs
@@ -132,23 +147,19 @@ class Morpion {
 
     // Plays the atomic object at a specific path from the current Morpion object
     // path: the path to the atomic child represented as an array of integers (ex. [3,2,5])
-    // player: current player ( >= 1 )
-    playPath(path, player) {
+    playPath(path) {
         if(this.atomic) {
-            this.play(player)
+            this.play()
         } else if(path.length === 0) {
             throw new Error("Invalid path")
         } else {
-            this.grid[path[0]].playPath(path.slice(1), player)
+            this.grid[path[0]].playPath(path.slice(1))
         }
     }
 
     // Plays a random valid atomic that is a child of the current object
-    // player: current player ( >= 1 )
-    playRandomValidAtomic(player) {
-        if(!player) {
-            throw new Error("Invalid player: " + player)
-        } else if(!this.master) {
+    playRandomValidAtomic() {
+        if(!this.master) {
             throw new Error("You can only play a valid atomic from the master object")
         }
 
@@ -161,7 +172,7 @@ class Morpion {
 
         const randomAtomic = validAtomics[floor(random(validAtomics.length))]
 
-        randomAtomic.play(player)
+        randomAtomic.play()
     }
 
     // Returns an array containing all the valid atomics that are childs of the current object
@@ -185,13 +196,21 @@ class Morpion {
         return atomics
     }
 
+    // Returns an array containing all the playanle atomics that are childs of the current object
+    getPlayableAtomics() {
+        if(!this.master) {
+            throw new Error("This function cannot only be called on the master object")
+        }
+
+        return this.getChild(this.nextZone).getValidAtomics()
+    }
+
     // Base function to play a move
-    // player: current player ( >= 1 )
     // Throws an error if :
     // - The object is not atomic
     // - The object is not in the next playable zone 
     // - The object already has a value
-    play(player) {
+    play() {
         if(!this.atomic) {
             throw new Error("Trying to play on a non-atomic object: " + this.getPath())
         } else if(!this.isInNextZone()) {
@@ -204,22 +223,28 @@ class Morpion {
 
         this.debug("Play: " + this.getPath())
 
-        this.value = player
+        this.value = this.masterParent.player
         this.removeFromAtomics()
 
-        if(!this.parent.winUpdate(player)) {
+        if(!this.parent.winUpdate()) {
             this.parent.drawUpdate()
             has_win = false
         }
 
         this.updateNextZone()
 
+        if(this.masterParent.value !== EMPTY) {
+            this.masterParent.gameOver = true
+        }
+
+        this.switchPlayers()
+
         return has_win
     }
 
     // Do not call this function yourself
     // Recursively check for win conditions after a win update
-    winUpdate(player) {
+    winUpdate() {
         for(let win of win_checks) {
             if(this.checkWin(win)) {
                 for(let i of win) {
@@ -227,18 +252,18 @@ class Morpion {
                 }
 
                 if(this.master){
-                    this.value = player
-                    gameOver()
+                    this.value = this.masterParent.player
+                    this.gameOver = true
                     return
                 }
 
                 this.disableChilds(true)
                 this.parent.drawUpdate()
 
-                this.debug(this.getPath() + ': set win (' + player + ')')
-                this.value = player
+                this.debug(this.getPath() + ': set win (' + this.masterParent.player + ')')
+                this.value = this.masterParent.player
 
-                if(!this.parent.winUpdate(player)) {
+                if(!this.parent.winUpdate()) {
                     this.parent.drawUpdate()
                 }
                 return true
@@ -255,7 +280,7 @@ class Morpion {
             this.debug(this.getPath() + ': set draw')
 
             if(this.master){
-                gameOver()
+                this.gameOver = true
                 return
             }
 
@@ -334,6 +359,16 @@ class Morpion {
         this.atomics.splice(index, 1)
     }
 
+    switchPlayers() {
+        let master = this.master ? this : this.masterParent
+
+        master.player++
+
+        if(master.player > max_player) {
+            master.player = 1
+        }
+    }
+
     // Return true if the object is located in the next valid zone
     isInNextZone() {
         const path = this.getPathArray()
@@ -403,21 +438,36 @@ class Morpion {
         }
     }
 
-    // Returns an array containing the number of cases for each player at each layer, excluding the atomic layer
-    getStats(stats) {
-        if(this.master) {
-            stats = []
-        } else { 
-            if(stats[this.layer] === undefined) {
-                stats[this.layer] = []
+    // Print in a console-friendly format the current disposition of the object
+    print() {
+        let str = ''
+        for(let j = 0; j < 3; j ++) {
+            for(let i = 0; i < 3; i++) {
+                const index = i + j*3
+                str += (this.grid[index].value === 0 ? '_' : (this.grid[index].value === 1 ? 'X' : '0')) + ' '
             }
             
-            if(stats[this.layer][this.value] === undefined) {
-                stats[this.layer][this.value] = 1
-            } else {
-                stats[this.layer][this.value]++
-            }
+            str += '\n'
         }
+
+        return str
+    }
+
+    // Returns an array containing the number of cases for each player at each layer, excluding the atomic layer
+    getStats(stats) {
+        if(stats === undefined)  {
+            stats = []
+        }
+        if(stats[this.layer] === undefined) {
+            stats[this.layer] = []
+        }
+        
+        if(stats[this.layer][this.value] === undefined) {
+            stats[this.layer][this.value] = 1
+        } else {
+            stats[this.layer][this.value]++
+        }
+        
 
         if(this.layer !== 1) {
             this.grid.forEach(child => {
@@ -427,4 +477,67 @@ class Morpion {
 
         return stats
     }
+
+    // evaluate(player) {
+    //     const stats = this.masterParent.getStats()
+    //     let score = 0
+    //     let enemy = player === 1 ? 2 : 1
+
+    //     for(let i = 1; i < stats.length; i++) {
+    //         score += (stats[i][player] ? stats[i][player] : 0) * i * 2
+    //         score -= (stats[i][enemy] ? stats[i][enemy] : 0) * i
+    //     }
+
+    //     return score
+    // }
+
+    // bestMove(depth, player) {
+    //     let maxScore = Number.NEGATIVE_INFINITY
+    //     let move = null
+
+    //     for(let child of this.getValidAtomics()) {
+    //         const score = child.minimax(depth, false, player)
+
+    //         if(score > maxScore) {
+    //             maxScore = score
+    //             move = child.getPathArray()
+    //         }
+    //     }
+
+    //     return move
+    // }
+
+    // minimax(depth, maximizingPlayer, player) {
+    //     let game_state = _.cloneDeep(this)
+    //     const enemy = (player === 1 ? 2 : 1)
+
+    //     game_state.play(maximizingPlayer ? enemy : player)
+    //     const score = game_state.evaluate(player) * (depth+1)
+    //     // console.log('depth: ' + depth + '(' + (maximizingPlayer ? 'maximizing' : 'minimizing') + '):\n' + game_state.masterParent.printAtomic())
+
+    //     if(depth === 0 || game_state.masterParent.value !== EMPTY) {
+    //         // console.log(game_state.getPath() + ': ' + score)
+    //         return score
+    //     }
+
+    //     if(maximizingPlayer) {
+    //         let maxEval = Number.NEGATIVE_INFINITY
+
+    //         for(let atomic of game_state.masterParent.getChild(game_state.nextZone).getValidAtomics()) {
+    //             const childEval = atomic.minimax(depth-1, false, player)
+    //             maxEval = max(childEval, maxEval)
+    //         }
+
+    //         return maxEval
+    //     } else {
+    //         let minEval = Number.POSITIVE_INFINITY
+
+    //         for(let atomic of game_state.masterParent.getChild(game_state.nextZone).getValidAtomics()) {
+    //             const childEval = atomic.minimax(depth-1, true, player)
+    //             minEval = min(childEval, minEval)
+    //         }
+
+    //         return minEval
+    //     }
+    // }
 }
