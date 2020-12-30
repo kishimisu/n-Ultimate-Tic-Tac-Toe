@@ -36,20 +36,21 @@ class Tree {
                 let node = nodes[j][i]
 
                 node.position = {
-                    x: x + width*size/2, 
-                    y: y + height*size
+                    x: x + game_size*size/2, 
+                    y: y + game_size*size
                 }
 
                 node.current.state.drawStretched(x, y, size, size)
 
                 if(node.parent) {
-                    line(x + width*size/2, y, node.parent.position.x, node.parent.position.y)
+                    line(x + game_size*size/2, y, node.parent.position.x, node.parent.position.y)
                 }
                 textSize(120 * size)
+                strokeWeight(size*5)
                 text(`${node.current.name} ${node.current.wins}/${node.current.trials}`, node.position.x, node.position.y)
             }
 
-            y += size * height * 1.2
+            y += size * game_size * 1.2
             size /= 2
         }
     }
@@ -150,11 +151,11 @@ class Node {
         let stateSim = _.cloneDeep(this.state)
 
         while (!stateSim.gameOver) {
-            stateSim.print()
+            // stateSim.print()
             stateSim.playRandomValidAtomic()
         } 
-        stateSim.print()
-        console.log("###END###")
+        // stateSim.print()
+        // console.log("###END###")
         this.backPropagate(stateSim.value)
     }
 

@@ -89,33 +89,33 @@ class Morpion {
             }
 
             strokeWeight(12)
-            rect(0, 0, width-1, height-1)
+            rect(0, 0, game_size-1, game_size-1)
             strokeWeight(25)
 
             if(debug_attribute !== 'none') {
                 fill(0)
-                text(debug_attribute === 'value' ? this.value : this.index, width/2,height/2)
+                text(debug_attribute === 'value' ? this.value : this.index, game_size/2,game_size/2)
             } else if(this.value === 1) { // Draw cross
-                line(width*0.05, height*0.05, width*0.95, height*0.95)
-                line(width*0.95, height*0.05, width*0.05, height*0.95)
+                line(game_size*0.05, game_size*0.05, game_size*0.95, game_size*0.95)
+                line(game_size*0.95, game_size*0.05, game_size*0.05, game_size*0.95)
             } else if(this.value === 2) { // Draw circle
                 noFill()
-                ellipse(width/2, height/2, width*0.9)
+                ellipse(game_size/2, game_size/2, game_size*0.9)
             } else if(this.value === 3) { // Draw triangle
                 noFill()
-                triangle(width/2,height*0.05,width*0.05,height*0.95,width*0.95,height*0.95)
+                triangle(game_size/2,game_size*0.05,game_size*0.05,game_size*0.95,game_size*0.95,game_size*0.95)
             }
 
             if(JSON.stringify(this.getPathArray()) === JSON.stringify(this.nextZone)) {
                 strokeWeight(1)
                 fill(100,255,100,100)
-                rect(0,0,width-1,height-1) // fill with background color
+                rect(0,0,game_size-1,game_size-1) // fill with background color
             }
         } else if(this.nextZone.length === 0) {
             noFill()
             stroke(100,255,100)
-            strokeWeight(20)
-            rect(0,0,width-1,height-1) 
+            strokeWeight(10)
+            rect(0,0,game_size-1,game_size-1) 
         }
         pop()
     }
@@ -136,11 +136,11 @@ class Morpion {
 
             for(let x = 0; x < 3; x++) {  
                 this.grid[y*3 + x].draw() 
-                translate(width, 0)
+                translate(game_size, 0)
             }
 
             pop()
-            translate(0, height)
+            translate(0, game_size)
         }
         pop()
     }
