@@ -6,6 +6,12 @@ function debug_mc(str){
     }
 }
 
+function debug_mc(str, b){
+    if(debug_montecarlo) {
+        print(str + ' ' + b)
+    }
+}
+
 class Tree {
     constructor(state) {
         this.root = new Node(state, null)
@@ -51,8 +57,9 @@ class Tree {
 
 class Node {
     constructor(state, parent) {
-        this.wins = 0
+        this.wins   = 0
         this.losses = 0
+        this.draws  = 0
         this.trials = 0
 
         this.state = state
@@ -133,7 +140,6 @@ class Node {
                 }
 
                 children.push(newNode)
-                debug_mc('created', children[children.length-1])
             }
         }
 
@@ -144,17 +150,26 @@ class Node {
         let stateSim = _.cloneDeep(this.state)
 
         while (!stateSim.gameOver) {
+            stateSim.print()
             stateSim.playRandomValidAtomic()
         } 
-
+        stateSim.print()
+        console.log("###END###")
         this.backPropagate(stateSim.value)
     }
 
     backPropagate(result) {
-        if(result === this.state.player && result !== 0) {
-            this.wins++
-        } else if (result !== this.state.player && result !== 0) {
-            this.losses++
+        // if (result === DRAW) console.log("ICI")
+
+        if(result === this.state.player) {
+            this.wins += 1
+        } else if (result !== this.state.player && result !== DRAW) {
+            this.losses += 1
+            // console.log(result, this.state.player)
+        } else if (result === DRAW) {
+            // this.wins += 0.5
+            // this.losses += 0.5
+            this.draws++
         }
 
         this.trials++

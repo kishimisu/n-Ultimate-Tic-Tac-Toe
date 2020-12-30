@@ -8,7 +8,7 @@ let player = 0
 
 p5.disableFriendlyErrors = true
 
-let m = new Morpion(2)
+let m = new Morpion(1)
 
 function setup() {
     createCanvas(600, 600)
@@ -70,11 +70,13 @@ function mouseClicked() {
     nextPlayer()
 }
 
-let thinking_time = 15
+let thinking_time = 3
 
 function monteCarloPlay() {
-    var t = new Tree(m)
+    console.log("Start monte carlo")
+    t = new Tree(m)
     let start = millis()
+    // t.root.state.print()
 
     do {
         t.root.chooseChild()
@@ -85,7 +87,7 @@ function monteCarloPlay() {
     })
 
     console.log('calculated ' + t.root.trials + ' games, next move has ' + best.losses + '/' + best.trials + ' win outcomes ' + 
-                '(' + nf(100-(best.trials - best.losses)/best.trials*100,0,2) + '%)')
+                '(' + nf((best.losses)/best.trials*100,0,2) + '%)', best.draws/best.trials*100)
     m.playPath(best.move)
 }
 

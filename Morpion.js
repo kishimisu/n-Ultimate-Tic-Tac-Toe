@@ -281,14 +281,13 @@ class Morpion {
 
             if(this.master){
                 this.gameOver = true
+                this.value = DRAW
                 return
             }
 
             this.disableChilds(true)
             this.value = DRAW
-            if(!this.master){
-                this.parent.drawUpdate()
-            }
+            this.parent.drawUpdate()
             return true
         }
 
@@ -450,7 +449,7 @@ class Morpion {
             str += '\n'
         }
 
-        return str
+        console.log(str)
     }
 
     // Returns an array containing the number of cases for each player at each layer, excluding the atomic layer
