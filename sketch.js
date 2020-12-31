@@ -4,7 +4,7 @@ let debug_montecarlo = false
 
 let speed = .1
 let max_player = 2
-let players = ['human', 'montecarlo']
+let players = ['random', 'montecarlo']
 let player = 0
 let game_size = 600
 
@@ -12,7 +12,7 @@ let show_graph = false
 let NODE_SIZE = 100
 let GRAPH_WIDTH = 3000
 
-let thinking_time = 3
+let thinking_time = 10
 
 p5.disableFriendlyErrors = true
 
@@ -110,7 +110,14 @@ function graphClicked() {
 
 function monteCarloPlay() {
     console.log("Start monte carlo")
-    t = new Tree(_.cloneDeep(m))
+    if (t === undefined)
+        t = new Tree(_.cloneDeep(m))
+    else {
+        if (t.optimize(_.cloneDeep(m)) === false) {
+            console.log("PROBLEME")
+        }
+        console.log(t.root.trials)
+    }
     let start = millis()
 
     do {
@@ -119,9 +126,9 @@ function monteCarloPlay() {
         }
     }while(millis() - start < thinking_time * 1000)
 
-    let best = t.root.children.reduce(function(prev, curr) {
-        return prev.trials < curr.trials ? curr : prev
-    })
+    let best = t.getMostVisitedNode()
+
+    console.log(best)
 
     console.log('calculated ' + t.root.trials + ' games, next move has ' + best.losses + '/' + best.trials + ' win outcomes ' + 
                 '(' + nf((best.losses)/best.trials*100,0,2) + '%)', best.draws/best.trials*100)

@@ -477,6 +477,22 @@ class Morpion {
         return stats
     }
 
+    equals(other) {
+        // if (JSON.stringify(this.getPathArray) === JSON.stringify(other.getPathArray)) {
+        //     return true
+        // }
+        
+        if (this.atomics.length != other.atomics.length) return false
+        if (JSON.stringify(this.nextZone) !== JSON.stringify(other.nextZone)) return false
+
+        for (let i = 0; i < this.atomics.length; i++) {
+            if (this.atomics[i].getPath() !== other.atomics[i].getPath()) {
+                return false
+            }
+        }
+        return true
+    }
+
     // evaluate(player) {
     //     const stats = this.masterParent.getStats()
     //     let score = 0

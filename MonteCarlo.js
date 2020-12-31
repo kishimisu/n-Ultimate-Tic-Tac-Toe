@@ -53,6 +53,26 @@ class Tree {
             size /= 2
         }
     }
+
+    getMostVisitedNode() {
+        return this.root.children.reduce(function(prev, curr) {
+            return prev.trials < curr.trials ? curr : prev
+        })
+    }
+
+    optimize(move) {
+        this.root = this.getMostVisitedNode()
+
+        for (let child of this.root.children) {
+            if (child.state.equals(move)) {
+                this.root = child
+                this.root.root = true
+                this.root.parent = null
+                return true
+            }
+        }
+        throw new Error("Could not optimize !")
+    }
 }
 
 class Node {
@@ -176,9 +196,9 @@ class Node {
                 child.playPath(atomic.getPathArray())
                 let newNode = new Node(child, this)
                 
-                if(this.root) {
+                // if(this.root) {
                     newNode.move = atomic.getPathArray()
-                }
+                // }
 
                 children.push(newNode)
             }
