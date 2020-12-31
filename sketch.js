@@ -6,15 +6,16 @@ let max_player = 2
 let players = ['human', 'montecarlo']
 let player = 0
 let game_size = 600
+let show_graph = false
 
-let thinking_time = 3
+let thinking_time = 1
 
 p5.disableFriendlyErrors = true
 
 let m = new Morpion(1)
 
 function setup() {
-    createCanvas(1200, 800)
+    createCanvas(1200, 2000)
     textAlign(CENTER, CENTER)
     textSize(200)
 
@@ -56,7 +57,10 @@ function nextPlayer() {
 }
 
 function mouseClicked() {
-    if(players[player] !== 'human' || m.gameOver || mouseX < 0 || mouseX > game_size || mouseY < 0 || mouseY > game_size) {
+    if(show_graph) {
+        graphClicked()
+        return
+    } else if(players[player] !== 'human' || m.gameOver || mouseX < 0 || mouseX > game_size || mouseY < 0 || mouseY > game_size) {
         return
     }
 
@@ -71,6 +75,33 @@ function mouseClicked() {
     m.playPath(path)
 
     nextPlayer()
+}
+
+function showGraph() {
+    show_graph = true
+    t.root.draw([])
+}
+
+function graphClicked() {
+    let y = 0
+
+    if(mouseY%(NODE_SIZE*2)<NODE_SIZE) {
+        y = floor(mouseY/NODE_SIZE/2)
+    }
+    if(y === 0) {
+        return
+    }
+
+    if(y < t.selection.length + 1) {
+        t.selection = t.selection.slice(0, y-1)
+    }
+
+    clickedNode = t.root.getClickedNode(mouseX, t.selection.slice(0, y-1))
+
+    if(clickedNode) {
+        t.selection.push(clickedNode)
+        t.root.draw(t.selection)
+    }
 }
 
 function monteCarloPlay() {

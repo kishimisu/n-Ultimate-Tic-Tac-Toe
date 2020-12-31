@@ -58,14 +58,14 @@ class Morpion {
     }
 
     // Draws the master object at (x,y) with a size of (w,h)
-    drawStretched(x, y, w, h) {
+    drawStretched(x, y, w) {
         if(!this.master) {
             throw new Error("You can only call drawStretched from the master object")
         }
 
         push()
             translate(x,y)
-            scale(w,h)
+            scale(w/game_size)
             this.draw()
         pop()
     }

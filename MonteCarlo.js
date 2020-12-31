@@ -1,4 +1,6 @@
 let debug_montecarlo = false
+let NODE_SIZE = 100
+let GRAPH_WIDTH = 900
 
 function debug_mc(str){
     if(debug_montecarlo) {
@@ -15,6 +17,7 @@ function debug_mc(str, b){
 class Tree {
     constructor(state) {
         this.root = new Node(state, null)
+        this.selection = []
     }
     
     draw(layers) {
@@ -74,6 +77,48 @@ class Node {
         debug_mc('add', this.name)
     }
 
+    draw(path, parent, layer) {
+        if(parent === undefined) {
+            push()
+            background(255)
+            noFill()
+            parent = {x: GRAPH_WIDTH/2,y: 0}
+            this.state.drawStretched(GRAPH_WIDTH/2, 0, NODE_SIZE)
+            layer = 1
+        }
+
+        if(!this.children || this.children.length === 0) {
+            return
+        }
+
+        this.children.forEach((child, index) => {
+            const x = (GRAPH_WIDTH / this.children.length) * index
+            const y = layer * NODE_SIZE*2
+            child.state.drawStretched(x, y, NODE_SIZE)
+            line(parent.x + NODE_SIZE/2, parent.y+NODE_SIZE+NODE_SIZE/3, x+NODE_SIZE/2, y)
+
+            push()
+            if(path.length > 0 && path[0] === child) {
+                child.draw(path.slice(1), {x, y}, layer+1)
+                stroke('red')
+                strokeWeight(4)
+                rect(x,y,NODE_SIZE,NODE_SIZE)
+            }
+            if(layer%2==0) {
+                fill(color(0, 50))
+                noStroke()
+                rect(x,y,NODE_SIZE,NODE_SIZE)
+            }
+            textSize(NODE_SIZE/6)
+            stroke(0)
+            strokeWeight(1)
+            fill(0)
+            text(`${child.wins}/${child.trials}`, x+NODE_SIZE/2,y+NODE_SIZE+NODE_SIZE/6)
+
+            pop()
+        })
+    }
+
     chooseChild() {
         if(!this.children) {
             this.children = this.getChildren()
@@ -130,7 +175,6 @@ class Node {
         const children = []
 
         if(!this.state.gameOver) {
-    
             for(const atomic of this.state.getPlayableAtomics()) {
                 let child = _.cloneDeep(this.state)
                 child.playPath(atomic.getPathArray())
@@ -189,6 +233,22 @@ class Node {
                     child.prepareForDraw(arr, arr[layer][arr[layer].length-1], layer - 1)
                 }
             }
+        }
+    }
+
+    getClickedNode(x, selection) {
+        if(selection.length === 0) {
+            const w = GRAPH_WIDTH / this.children.length
+
+            if(x%(w)<NODE_SIZE) {
+                return this.children[floor(x/w)]
+            } else {
+                return null
+            }
+        } else {
+            let child = this.children.find(child => child === selection[0])
+
+            return child.getClickedNode(x, selection.slice(1))
         }
     }
 }
