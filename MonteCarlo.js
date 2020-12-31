@@ -1,7 +1,3 @@
-let debug_montecarlo = false
-let NODE_SIZE = 100
-let GRAPH_WIDTH = 900
-
 function debug_mc(str){
     if(debug_montecarlo) {
         print(str)

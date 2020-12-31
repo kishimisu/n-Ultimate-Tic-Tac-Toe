@@ -1,21 +1,25 @@
 let debug_logs = false
 let debug_attribute = 'none' // 'none' : 'value' : 'index'
+let debug_montecarlo = false
 
 let speed = .1
 let max_player = 2
 let players = ['human', 'montecarlo']
 let player = 0
 let game_size = 600
-let show_graph = false
 
-let thinking_time = 1
+let show_graph = false
+let NODE_SIZE = 100
+let GRAPH_WIDTH = 3000
+
+let thinking_time = 3
 
 p5.disableFriendlyErrors = true
 
-let m = new Morpion(1)
+let m = new Morpion(2)
 
 function setup() {
-    createCanvas(1200, 2000)
+    createCanvas(3000, 2000)
     textAlign(CENTER, CENTER)
     textSize(200)
 
