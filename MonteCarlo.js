@@ -1,9 +1,3 @@
-function debug_mc(str){
-    if(debug_montecarlo) {
-        print(str)
-    }
-}
-
 function debug_mc(str, b){
     if(debug_montecarlo) {
         print(str + ' ' + b)
@@ -23,6 +17,7 @@ class Tree {
             nodes[i] = []
         }
         
+        console.log(nodes)
         this.root.prepareForDraw(nodes, null, layers-1)
         let size = 1/3
         let y = 0
@@ -39,7 +34,8 @@ class Tree {
                     y: y + game_size*size
                 }
 
-                node.current.state.drawStretched(x, y, size, size)
+                // node.current.state.drawStretched(x, y, size, size)
+                node.current.state.draw(x, y, size)
 
                 if(node.parent) {
                     line(x + game_size*size/2, y, node.parent.position.x, node.parent.position.y)
@@ -64,7 +60,6 @@ class Node {
 
         this.state = state
         this.parent = parent
-        this.name = floor(random(999))
 
         if(!this.parent) {
             this.root = true
@@ -79,7 +74,7 @@ class Node {
             background(255)
             noFill()
             parent = {x: GRAPH_WIDTH/2,y: 0}
-            this.state.drawStretched(GRAPH_WIDTH/2, 0, NODE_SIZE)
+            this.state.draw(GRAPH_WIDTH/2, 0, NODE_SIZE)
             layer = 1
         }
 
@@ -90,7 +85,7 @@ class Node {
         this.children.forEach((child, index) => {
             const x = (GRAPH_WIDTH / this.children.length) * index
             const y = layer * NODE_SIZE*2
-            child.state.drawStretched(x, y, NODE_SIZE)
+            child.state.draw(x, y, NODE_SIZE)
             line(parent.x + NODE_SIZE/2, parent.y+NODE_SIZE+NODE_SIZE/3, x+NODE_SIZE/2, y)
 
             push()
@@ -170,14 +165,26 @@ class Node {
     getChildren() {
         const children = []
 
-        if(!this.state.gameOver) {
-            for(const atomic of this.state.getPlayableAtomics()) {
-                let child = _.cloneDeep(this.state)
-                child.playPath(atomic.getPathArray())
-                let newNode = new Node(child, this)
+        // if(!this.state.gameOver) {
+        //     for(const atomic of this.state.getPlayableAtomics()) {
+        //         let child = _.cloneDeep(this.state)
+        //         child.playPath(atomic.getPathArray())
+        //         let newNode = new Node(child, this)
                 
+        //         if(this.root) {
+        //             newNode.move = atomic.getPathArray()
+        //         }
+
+        //         children.push(newNode)
+        //     }
+        // }
+
+        if(this.state.checkStatus() === 0) {
+            for(let tuple of this.state.getNextValidStates()) {
+                let newNode = new Node(tuple.state, this)
+
                 if(this.root) {
-                    newNode.move = atomic.getPathArray()
+                    newNode.path = tuple.path
                 }
 
                 children.push(newNode)
@@ -188,26 +195,34 @@ class Node {
     }
 
     simulate() {
-        let stateSim = _.cloneDeep(this.state)
+        let stateSim
 
-        while (!stateSim.gameOver) {
-            // stateSim.print()
-            stateSim.playRandomValidAtomic()
-        } 
-        // stateSim.print()
-        // console.log("###END###")
-        this.backPropagate(stateSim.value)
+        if(game_version === 'slow') {
+            throw new Error("Not implemented!")
+        } else if(game_version === 'fast') {
+            stateSim = new MainBoard(this.state)
+        } else if(game_version === 'dynamic') {
+            stateSim = new DynamicMorpion(this.state)
+        }
+        this.backPropagate(stateSim.simulate())
+
+        // let stateSim = _.cloneDeep(this.state)
+
+        // while (!stateSim.gameOver) {
+        //     // stateSim.print()
+        //     stateSim.playRandomValidAtomic()
+        // } 
+        // // stateSim.print()
+        // // console.log("###END###")
+        // this.backPropagate(stateSim.value)
     }
 
     backPropagate(result) {
-        // if (result === DRAW) console.log("ICI")
-
         if(result === this.state.player) {
             this.wins += 1
-        } else if (result !== this.state.player && result !== DRAW) {
+        } else if (result !== this.state.player && result !== 3) {
             this.losses += 1
-            // console.log(result, this.state.player)
-        } else if (result === DRAW) {
+        } else if (result === 3) {
             // this.wins += 0.5
             // this.losses += 0.5
             this.draws++
@@ -225,7 +240,7 @@ class Node {
 
         if(this.children && layer > 0) {
             for(let child of this.children) {
-                if(child.trials > 0 || child.state.gameOver) {
+                if(child.trials > 0 || child.state.checkStatus() !== 0) {
                     child.prepareForDraw(arr, arr[layer][arr[layer].length-1], layer - 1)
                 }
             }
@@ -252,7 +267,7 @@ class Node {
 let t 
 function nextTree(layers = 5, simulation = 1) {
     if(t === undefined) {
-        t = new Tree(m)
+        t = new Tree(b)
     }
 
     for(let i = 0; i < simulation; i++) {
