@@ -1,3 +1,4 @@
+// this is a function
 function debug_mc(str, b){
     if(debug_montecarlo) {
         print(str + ' ' + b)
