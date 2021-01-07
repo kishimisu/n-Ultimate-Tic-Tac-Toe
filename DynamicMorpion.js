@@ -54,7 +54,30 @@ class DynamicMorpion {
         }
     }
 
-    draw(zone, nextZone) {
+    draw() {
+        push()
+        translate(width/2-game_size/2,innerHeight/2-game_size/2)
+        this.recursiveDraw()
+        pop()
+    }
+
+    drawStretched(x, y, w=game_size, state) {
+        push()
+        translate(x,y)
+        scale(w/game_size)
+
+        let diff 
+        if(state !== undefined && settings.grayscale) {
+            diff = {
+                path:  this.getDifference(state),
+                zone: state.nextZone
+            }
+        }
+        this.recursiveDraw(undefined,undefined,diff)
+        pop()
+    }
+
+    recursiveDraw(zone, nextZone, difference) {
         zone ||= []
         nextZone ||= this.nextZone
 
@@ -69,28 +92,44 @@ class DynamicMorpion {
                 const value = this.valueOf(index)
 
                 if(this.children) {
-                    this.children[index].draw([...zone, index], nextZone) 
-                } 
+                    this.children[index].recursiveDraw([...zone, index], nextZone, difference) 
+                } else {
+                    fill(220)
+                    rect(0,0,game_size,game_size)
+                }
 
                 strokeWeight(25)
                 stroke(0)
                 noFill()
 
+                let color_attenuation = 1
+                if(difference !== undefined) {
+                    color_attenuation = 8
+                    if(JSON.stringify(difference.path) === JSON.stringify([...zone, index])) {
+                        color_attenuation = 1
+                    }
+                }
+
                 if(value === 1) {
                     line(game_size*0.05, game_size*0.05, game_size*0.95, game_size*0.95)
                     line(game_size*0.95, game_size*0.05, game_size*0.05, game_size*0.95)
-                    fill('#ff000080')
+                    fill(255 / color_attenuation, 0, 0, 128)
                 } else if(value === 2) {
                     ellipse(game_size/2, game_size/2, game_size*0.9)
-                    fill('#0000ff80')
+                    fill(0, 0, 255 / color_attenuation, 128)
                 } else if(value === 3) {
-                    fill('#000000a0')
+                    fill(0, 160)
                 }
                 if(JSON.stringify(nextZone) === JSON.stringify([...zone, index])) {
-                    fill('#00ff0040')
+                    fill(0, 255 / color_attenuation, 0, 64)
+                }
+
+                if(difference !== undefined && JSON.stringify(difference.zone) === JSON.stringify([...zone, index])) {
+                    fill(0, 255, 0, 64)
                 }
 
                 strokeWeight(12)
+
                 rect(0,0,game_size,game_size)
                 
                 translate(game_size, 0)
@@ -213,8 +252,6 @@ class DynamicMorpion {
                 child = child.children[path[0]]
             } while(child.checkStatus() === 0 && path.length > 0)
         }
-
-        // print('next zone', this.nextZone)
     }
 
     switchPlayers() {
@@ -228,6 +265,17 @@ class DynamicMorpion {
         } else {
             return this
         }
+    }
+
+    getChildIteratively(path) {
+        let child = this
+
+        while(path.length > 0) {
+            child = child.children[path[0]]
+            path = path.slice(1)
+        }
+
+        return child
     }
 
     valueOf(i) {
@@ -307,6 +355,25 @@ class DynamicMorpion {
         return this.checkStatus()
     }
 
+    getDifference(state, path) {
+        path ||= []
+        if(this.children !== undefined) {
+            for(const [index, child] of this.children.entries()) {
+                let difference = child.getDifference(state.children[index], [...path, index])
+
+                if(difference !== undefined) {
+                    return difference
+                }
+            }
+        } else {
+            for(let i = 0; i < 9; i++) {
+                if(this.valueOf(i) !== state.valueOf(i)) {
+                    return [...path, i]
+                }
+            }
+        }
+    }
+
     print() {
         let str = ''
         for(let j = 0; j < 3; j ++) {
@@ -327,6 +394,6 @@ function s(c=1) {
     for(let i = 0; i < c; i++) {
         k.randomPlay();
     }
-    background(255);
+    background(BACKGROUND_COLOR);
     k.draw();
 }

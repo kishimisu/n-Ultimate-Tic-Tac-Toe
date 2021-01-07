@@ -341,7 +341,7 @@ class Morpion {
 
         master.player++
 
-        if(master.player > max_player) {
+        if(master.player > 2) {
             master.player = 1
         }
     }
