@@ -1,5 +1,4 @@
 const colors = [[255,0,0],[0,0,255]]
-const win_checks = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ]
 const EMPTY = 0, DRAW = -1, DISABLED = -2
 
 function getPlayerColor(player) {
@@ -18,7 +17,6 @@ class Morpion {
         this.masterParent = masterParent || this
 
         if(masterParent) {
-            this.atomics = masterParent.atomics
             this.nextZone = masterParent.nextZone
         }
 
@@ -34,7 +32,6 @@ class Morpion {
         this.win_highlight = false
 
         if(this.master) {
-            this.atomics = []
             this.nextZone = []
             this.gameOver = false
             this.player = 1
@@ -52,8 +49,6 @@ class Morpion {
                         this.masterParent
                     ))
             }
-        } else {
-            this.atomics.push(this)
         }
     }
 
@@ -224,7 +219,6 @@ class Morpion {
         this.debug("Play: " + this.getPath())
 
         this.value = this.masterParent.player
-        this.removeFromAtomics()
 
         if(!this.parent.winUpdate()) {
             this.parent.drawUpdate()
@@ -338,24 +332,7 @@ class Morpion {
                     child.disableChilds()
                 }
             }
-        } else {
-            this.removeFromAtomics()
         }
-    }
-
-    // Remove the object from the master's atomics array
-    // Must be called on an atomic object
-    removeFromAtomics() {
-        if(!this.atomic) {
-            throw new Error("Trying to remove a non-atomic object from the atomic collection: " + this.getPath())
-        }
-        const index = this.atomics.indexOf(this)
-
-        if(index === -1) {
-            throw new Error("Trying to remove an already removed atomic from the atomic collection: " + this.getPath())
-        }
-
-        this.atomics.splice(index, 1)
     }
 
     switchPlayers() {
@@ -363,7 +340,7 @@ class Morpion {
 
         master.player++
 
-        if(master.player > max_player) {
+        if(master.player > 2) {
             master.player = 1
         }
     }
@@ -476,67 +453,4 @@ class Morpion {
 
         return stats
     }
-
-    // evaluate(player) {
-    //     const stats = this.masterParent.getStats()
-    //     let score = 0
-    //     let enemy = player === 1 ? 2 : 1
-
-    //     for(let i = 1; i < stats.length; i++) {
-    //         score += (stats[i][player] ? stats[i][player] : 0) * i * 2
-    //         score -= (stats[i][enemy] ? stats[i][enemy] : 0) * i
-    //     }
-
-    //     return score
-    // }
-
-    // bestMove(depth, player) {
-    //     let maxScore = Number.NEGATIVE_INFINITY
-    //     let move = null
-
-    //     for(let child of this.getValidAtomics()) {
-    //         const score = child.minimax(depth, false, player)
-
-    //         if(score > maxScore) {
-    //             maxScore = score
-    //             move = child.getPathArray()
-    //         }
-    //     }
-
-    //     return move
-    // }
-
-    // minimax(depth, maximizingPlayer, player) {
-    //     let game_state = _.cloneDeep(this)
-    //     const enemy = (player === 1 ? 2 : 1)
-
-    //     game_state.play(maximizingPlayer ? enemy : player)
-    //     const score = game_state.evaluate(player) * (depth+1)
-    //     // console.log('depth: ' + depth + '(' + (maximizingPlayer ? 'maximizing' : 'minimizing') + '):\n' + game_state.masterParent.printAtomic())
-
-    //     if(depth === 0 || game_state.masterParent.value !== EMPTY) {
-    //         // console.log(game_state.getPath() + ': ' + score)
-    //         return score
-    //     }
-
-    //     if(maximizingPlayer) {
-    //         let maxEval = Number.NEGATIVE_INFINITY
-
-    //         for(let atomic of game_state.masterParent.getChild(game_state.nextZone).getValidAtomics()) {
-    //             const childEval = atomic.minimax(depth-1, false, player)
-    //             maxEval = max(childEval, maxEval)
-    //         }
-
-    //         return maxEval
-    //     } else {
-    //         let minEval = Number.POSITIVE_INFINITY
-
-    //         for(let atomic of game_state.masterParent.getChild(game_state.nextZone).getValidAtomics()) {
-    //             const childEval = atomic.minimax(depth-1, true, player)
-    //             minEval = min(childEval, minEval)
-    //         }
-
-    //         return minEval
-    //     }
-    // }
 }
