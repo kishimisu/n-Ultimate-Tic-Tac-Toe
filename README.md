@@ -6,6 +6,8 @@
 
 This project is an enhancement based on the [Ultimate Tic-Tac-Toe](https://en.wikipedia.org/wiki/Ultimate_tic-tac-toe) game which consists of adding a layer to the default tic-tac-toe where each of the 9 cases is a tic-tac-toe itself.
 
+It implements an AI that uses the Monte Carlo Tree Search algorithm in order to find the best next possible move. It's really hard to beat !
+
 This implementation is recursive and allow for an theorically infinite number of layer. In practice, it becomes too complex for a human after the layer 3 and too slow for a computer after the layer 4.
 
 Play it yourself ! [https://indiana-dev.github.io/n-Ultimate-Tic-Tac-Toe/](https://indiana-dev.github.io/n-Ultimate-Tic-Tac-Toe/)
