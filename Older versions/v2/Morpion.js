@@ -1,5 +1,4 @@
 const colors = [[255,0,0],[0,0,255]]
-const win_checks = [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ]
 const EMPTY = 0, DRAW = -1, DISABLED = -2
 
 function getPlayerColor(player) {

@@ -1,8 +1,12 @@
 const PLAYER_X = 1, PLAYER_O = 2
+const EMPTY = 0, DRAW = -1, DISABLED = -2
 
 const win_bitmasks = [
     [0x15, 0x540, 0x15000, 0x1041, 0x4104, 0x10410, 0x10101, 0x1110], 
     [0x2a, 0xa80, 0x2a000, 0x2082, 0x8208, 0x20820, 0x20202, 0x2220]
+]
+const win_checks = [ 
+    [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] 
 ]
 
 function sliceBits(integer, start, length) {
@@ -39,7 +43,7 @@ class DynamicMorpion {
         } else {
             this.grid = 0
 
-            if(master) { // master
+            if(master) { 
                 this.player = PLAYER_X
                 this.nextZone = null
             }
@@ -61,7 +65,7 @@ class DynamicMorpion {
         pop()
     }
 
-    drawStretched(x, y, w=game_size, state) {
+    drawWithDifference(x, y, w, state, graph = true) {
         push()
         translate(x,y)
         scale(w/game_size)
@@ -70,7 +74,8 @@ class DynamicMorpion {
         if(state !== undefined && settings.grayscale) {
             diff = {
                 path:  this.getDifference(state),
-                zone: state.nextZone
+                zone: state.nextZone,
+                graph: graph
             }
         }
         this.recursiveDraw(undefined,undefined,diff)
@@ -80,9 +85,15 @@ class DynamicMorpion {
     recursiveDraw(zone, nextZone, difference) {
         zone ||= []
         nextZone ||= this.nextZone
+        let winIndexes = []
 
         push()
         scale(1/3)
+
+        const status = this.checkStatus()
+        if(status === 1 || status === 2) {
+            winIndexes = this.getWinIndexes()
+        }
 
         for(let y = 0; y < 3; y++) {
             push()
@@ -95,6 +106,7 @@ class DynamicMorpion {
                     this.children[index].recursiveDraw([...zone, index], nextZone, difference) 
                 } else {
                     fill(220)
+                    strokeWeight(12)
                     rect(0,0,game_size,game_size)
                 }
 
@@ -102,35 +114,50 @@ class DynamicMorpion {
                 stroke(0)
                 noFill()
 
-                let color_attenuation = 1
+                let color = 255, transparency = 128
                 if(difference !== undefined) {
-                    color_attenuation = 8
-                    if(JSON.stringify(difference.path) === JSON.stringify([...zone, index])) {
-                        color_attenuation = 1
+                    if(difference.graph) {
+                        color = 255/8
+                        if(JSON.stringify(difference.path) === JSON.stringify([...zone, index])) {
+                            color = 255
+                        }
+                    } else {
+                        if(winIndexes.includes(index)) {
+                            transparency = 170
+                        }
+                        if(JSON.stringify(difference.path) === JSON.stringify([...zone, index])) {
+                            transparency = 255
+                        }
                     }
                 }
 
                 if(value === 1) {
-                    line(game_size*0.05, game_size*0.05, game_size*0.95, game_size*0.95)
-                    line(game_size*0.95, game_size*0.05, game_size*0.05, game_size*0.95)
-                    fill(255 / color_attenuation, 0, 0, 128)
+                    fill(color, 0, 0, transparency)
                 } else if(value === 2) {
-                    ellipse(game_size/2, game_size/2, game_size*0.9)
-                    fill(0, 0, 255 / color_attenuation, 128)
+                    fill(0, 0, color, transparency)
                 } else if(value === 3) {
                     fill(0, 160)
                 }
-                if(JSON.stringify(nextZone) === JSON.stringify([...zone, index])) {
-                    fill(0, 255 / color_attenuation, 0, 64)
+                if(JSON.stringify(nextZone) === JSON.stringify(zone) && value === 0) {
+                    //JSON.stringify(nextZone) === JSON.stringify([...zone, index])) {
+                    fill(0, color, 0, 64)
                 }
 
-                if(difference !== undefined && JSON.stringify(difference.zone) === JSON.stringify([...zone, index])) {
+                if(difference !== undefined && difference.graph && JSON.stringify(difference.zone) === JSON.stringify([...zone, index])) {
                     fill(0, 255, 0, 64)
                 }
 
                 strokeWeight(12)
-
                 rect(0,0,game_size,game_size)
+                strokeWeight(25)
+                noFill()
+
+                if(value === 1) {
+                    line(game_size*0.05, game_size*0.05, game_size*0.95, game_size*0.95)
+                    line(game_size*0.95, game_size*0.05, game_size*0.05, game_size*0.95)
+                } else if(value === 2) {
+                    ellipse(game_size/2, game_size/2, game_size*0.9)
+                }
                 
                 translate(game_size, 0)
             }
@@ -150,6 +177,17 @@ class DynamicMorpion {
         }
         rect(0,0,game_size,game_size)
         pop()
+    }
+
+    getWinIndexes() {
+        for(let p = 0; p < 2; p++) {
+            for(let i = 0; i < 8; i++) {
+                if((this.grid & win_bitmasks[p][i]) === win_bitmasks[p][i] && 
+                (this.grid & win_bitmasks[p===0?1:0][i]) === 0) {
+                    return win_checks[i]
+                }
+            }
+        }
     }
 
     clickPlay(path) {
@@ -325,7 +363,6 @@ class DynamicMorpion {
                 validIndexes = this.getValidIndexes()
             }
             let validStates = []
-            // path ||= []
 
             if(this.children !== undefined) {
                 for(let index of validIndexes) {
@@ -388,12 +425,4 @@ class DynamicMorpion {
 
         console.log(str)
     }
-}
-
-function s(c=1) {
-    for(let i = 0; i < c; i++) {
-        k.randomPlay();
-    }
-    background(BACKGROUND_COLOR);
-    k.draw();
 }

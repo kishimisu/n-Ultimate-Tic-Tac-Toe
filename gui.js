@@ -12,26 +12,33 @@ let settings = {
 }
 
 function initGUI() {
-    layers_ctrl = gui.add(settings, 'layers', 2, 4, 1)
+    layers_ctrl = gui.add(settings, 'layers', 2, 5, 1)
         .onChange(on_layers_change)
+        .name("Layers")
     thinking_time_ctrl = gui.add(settings, 'thinking_time', 0.5, 30, 0.5)
+        .name("Thinking time (s)")
 
     player1_ctrl = gui.add(settings, 'player1', ['human', 'random', 'montecarlo'])
         .onChange(on_player1_change)
+        .name("Player 1")
     player2_ctrl = gui.add(settings, 'player2', ['human', 'random', 'montecarlo'])
         .onChange(on_player2_change)
+        .name("Player 2")
 
     bestmove_ctrl = gui.add(settings, 'best_move')
-        .name('Calculate best move (takes 5 seconds)')
+        .name('Show best move (5s)')
     bestmove_ctrl.domElement.parentElement.getElementsByClassName('property-name')[0].style.width='100%'
 
     reset_game_ctrl = gui.add(settings, 'reset_game')
+        .name("Reset Game")
 
     show_graph_ctrl = gui.add(settings, 'show_graph')
         .onChange(on_show_graph_change)
+        .name("Tree Explorer")
 
     grayscale_ctrl = gui.add(settings, 'grayscale')
         .onChange(on_grayscale_change)
+        .name("Highlight last move")
     hideElement(grayscale_ctrl)
 }
 
@@ -43,7 +50,7 @@ function on_get_best_move() {
     let best = tree.root.children.reduce(function(prev, curr) {
         return prev.trials < curr.trials ? curr : prev
     })
-    best.state.drawStretched(20+game_size/6, innerHeight * 1/2+20, game_size/3)
+    best.state.drawWithDifference(20+game_size/6, innerHeight * 1/2+20, game_size/3)
 }
 
 function on_reset_game() {
@@ -81,6 +88,7 @@ function on_show_graph_change() {
 
     if(settings.show_graph) {
         tree.draw()
+        drawTitle()
     } else {
         drawGame()
     }
@@ -88,6 +96,7 @@ function on_show_graph_change() {
 
 function on_grayscale_change() {
     tree.draw()
+    drawTitle()
 }
 
 function showElement(elm, show = true) {

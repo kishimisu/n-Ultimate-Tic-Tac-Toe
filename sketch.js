@@ -1,9 +1,4 @@
-let debug_logs = false
-let debug_attribute = 'none' // 'none' : 'value' : 'index'
-let debug_montecarlo = false
-
- let game_version = 'dynamic'
-
+let game_version = 'dynamic'
 let player = 0
 
 let game_size = 500
@@ -11,9 +6,9 @@ let NODE_SIZE = 150
 let GRAPH_WIDTH = window.innerWidth
 let MAX_HORIZONTAL_NODE_COUNT
 let BACKGROUND_COLOR = 40
-let calculating_best_move = false
 
-let speed = 20
+let tree, node_count
+let game, lastGame
 
 p5.disableFriendlyErrors = true
 
@@ -48,8 +43,40 @@ function initGame() {
 
 function drawGame() {
     background(BACKGROUND_COLOR)
-    game.draw()
+    game.drawWithDifference(width/2-game_size/2, innerHeight/2-game_size/2, game_size, lastGame, false)
     drawCurrentPlayer()
+    drawTitle()
+}
+
+function drawTitle() {
+    fill(255)
+    textSize(40)
+
+    if(settings.show_graph) {
+        push()
+        textAlign(LEFT, TOP)
+        text("Monte Carlo Tree Explorer", 20, 20)
+        document.title = "Monte Carlo Tree Explorer"
+        textSize(20)
+        text("Click on any board to get its next possible states", 20, 70)
+        pop()
+    } else {
+        let title = getGameText()
+        text(title, width/2, (innerHeight-game_size)/4)
+        document.title = title
+    }
+}
+
+function getGameText() {
+    if(settings.layers === 2) {
+        return "Ultimate Tic-Tac-Toe"
+    } else if(settings.layers === 3) {
+        return "Super-Ultimate Tic-Tac-Toe"
+    } else if(settings.layers === 4) {
+        return "Mega-Super-Ultimate Tic-Tac-Toe"
+    } else {
+        return "I-Cant-Even Tic-Tac-Toe"
+    }
 }
 
 function play() {
@@ -57,7 +84,11 @@ function play() {
 
     if (current === 'human') {
         return
-    } else if (current === 'montecarlo') {
+    } 
+    
+    lastGame = new DynamicMorpion(game)
+
+    if (current === 'montecarlo') {
         monteCarloPlay()
     } else if(current === 'random') {
         game.randomPlay()
@@ -105,15 +136,10 @@ function drawGameOver() {
     fill(40)
     textSize(30)
 
-    // if( ){
-    // }
-
     text("Game Over", x, y)
 }
 
 function nextPlayer() {
-    let current = (player === 0 ? settings.player1 : settings.player2)
-
     player++
     if(player > 1) {
         player = 0
@@ -122,7 +148,7 @@ function nextPlayer() {
     drawGame()
 
     if(game.checkStatus()===0) {
-        setTimeout(play, current === 'random' ? (speed < 1 ? speed * 10e3 : 0 ) : 0)
+        setTimeout(play)
     }
 }
 
@@ -155,6 +181,7 @@ function mouseClicked() {
         return
     }
 
+    lastGame = new DynamicMorpion(game)
     game.clickPlay(path)
 
     nextPlayer()
@@ -180,11 +207,10 @@ function graphClicked() {
         background(BACKGROUND_COLOR)
         tree.selection.push(clickedNode)
         tree.root.draw(tree.selection)
+        drawTitle()
     }
 }
 
-let tree
-let node_count
 function monteCarloPlay(simulate=false) {
     console.log("Start monte carlo version: " + game_version)
     let gameSim

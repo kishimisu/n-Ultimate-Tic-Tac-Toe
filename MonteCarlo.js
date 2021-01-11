@@ -1,3 +1,5 @@
+let debug_montecarlo = false
+
 function debug_mc(str, b){
     if(debug_montecarlo) {
         print(str + ' ' + b)
@@ -94,20 +96,6 @@ class Node {
     getChildren() {
         const children = []
 
-        // if(!this.state.gameOver) {
-        //     for(const atomic of this.state.getPlayableAtomics()) {
-        //         let child = _.cloneDeep(this.state)
-        //         child.playPath(atomic.getPathArray())
-        //         let newNode = new Node(child, this)
-                
-        //         if(this.root) {
-        //             newNode.move = atomic.getPathArray()
-        //         }
-
-        //         children.push(newNode)
-        //     }
-        // }
-
         if(this.state.checkStatus() === 0) {
             for(let tuple of this.state.getNextValidStates()) {
                 let newNode = new Node(tuple.state, this)
@@ -135,16 +123,6 @@ class Node {
             stateSim = new DynamicMorpion(this.state)
         }
         this.backPropagate(stateSim.simulate())
-
-        // let stateSim = _.cloneDeep(this.state)
-
-        // while (!stateSim.gameOver) {
-        //     // stateSim.print()
-        //     stateSim.playRandomValidAtomic()
-        // } 
-        // // stateSim.print()
-        // // console.log("###END###")
-        // this.backPropagate(stateSim.value)
     }
 
     backPropagate(result) {
@@ -180,9 +158,12 @@ class Node {
     draw(path, parent, layer) {
         if(parent === undefined) {
             push()
-            noFill()
             parent = {x: GRAPH_WIDTH/2-NODE_SIZE/2,y: NODE_SIZE/3}
-            this.state.drawStretched(GRAPH_WIDTH/2-NODE_SIZE/2, NODE_SIZE/3, NODE_SIZE)
+            this.state.drawWithDifference(GRAPH_WIDTH/2-NODE_SIZE/2, NODE_SIZE/3, NODE_SIZE)
+            fill(220)
+            textSize(NODE_SIZE/6)
+            text(`wins / trials`, GRAPH_WIDTH/2-NODE_SIZE/2+NODE_SIZE/2,NODE_SIZE/3+NODE_SIZE+NODE_SIZE/6)
+            noFill()
             layer = 1
         }
 
@@ -197,13 +178,13 @@ class Node {
                 const x = (GRAPH_WIDTH / min(this.children.length, MAX_HORIZONTAL_NODE_COUNT)) * index
                 const y = layer * NODE_SIZE*2
 
-                child.state.drawStretched(x, y, NODE_SIZE, this.state)
+                child.state.drawWithDifference(x, y, NODE_SIZE, this.state)
                 line(parent.x + NODE_SIZE/2, parent.y+NODE_SIZE+NODE_SIZE/3, x+NODE_SIZE/2, y)
 
                 push()
                     if(path.length > 0 && path[0] === child) {
                         child.draw(path.slice(1), {x, y}, layer+1)
-                        stroke('red')
+                        stroke(child.state.player === PLAYER_X ? 'blue' : 'red')
                         strokeWeight(4)
                         rect(x,y,NODE_SIZE,NODE_SIZE)
                     }
@@ -212,10 +193,10 @@ class Node {
                         noStroke()
                         rect(x,y,NODE_SIZE,NODE_SIZE)
                     }
-                    textSize(NODE_SIZE/6)
+                    textSize(NODE_SIZE/8)
                     stroke(0)
                     strokeWeight(1)
-                    fill(0)
+                    fill(220)
                     text(`${child.wins}/${child.trials}`, x+NODE_SIZE/2,y+NODE_SIZE+NODE_SIZE/6)
                 pop()
             })
